@@ -1,16 +1,150 @@
+@import url('https://fonts.googleapis.com/css?family=Roboto&display=swap');
+
+/* INDEX */
+
 * {
 	padding: 0;
 	margin: 0;
+	font-family: "Roboto", sans-serif;
+	font-weight: 200;
+	list-style-position: inside;
+}
+
+a {
+	color: #c874b2;
 }
 
 html {
-	background-color: #ff8370;
+	background-color: #f8f9ff	;
+}
+
+.hereFor {
+	display: flex;
+	position: fixed;
+	height: 10%;
+	width: 100%;
+	top: 5%;
+}
+
+.buttonMain {
+	font-size: 2em;
+	white-space: nowrap;
+	margin-left: 0%;
+}
+
+.buttonDesc {
+	font-size: 1.2em;
+	white-space: nowrap;
+	margin-left: 0%;
+}
+
+.hereFor .professional {
+	border: none;
+	color: #f8f9ff;
+	background-color: black;
+	width: 30%;
+	overflow: hidden;
+}
+
+.hereFor .general {
+	border: none;
+	color: #f8f9ff;
+	background-color: #210535;
+	width: 40%;
+	overflow: hidden;
+}
+
+.hereFor .personal {
+	border: none;
+	color: black;
+	background-color: #f5d5e0;
+	width: 30%;
+	margin-left: auto;
+	overflow: hidden;
 }
 
 .main {
+	background-color: #210535;
+	color: #f8f9ff;
 	position: fixed;
- 	top: 50%;
-  	left: 50%;
-  	margin-top: -258px;
-  	margin-left: -458px;
+	height: 80%;
+	width: 100%;
+ 	top: 15%;
+}
+
+.main .content {
+	padding: 3% 12% 0 12%;
+}
+
+.professionalPage .content {
+	padding: 3% 12% 0 12%;
+}
+
+.personalPage .content {
+	padding: 3% 12% 0 12%;
+}
+
+h1 {
+	font-size: 3em;
+}
+
+.topText {
+	font-size: 1.6em;
+	opacity: 80%;
+}
+
+.title {
+	font-size: 1em;
+}
+
+.title li {
+	padding: 0.2em;
+}
+
+/* PROFESSIONAL */
+
+.outsideLink {
+	list-style-type: none;
+	display: flex;
+
+}
+
+.outsideLink li {
+	border: 2px solid white;
+	border-radius: 50%;
+	padding: 10px;
+	margin: 10px;
+	width: 48px;
+	height: 48px;
+	text-align: center;
+}
+
+.fa {
+	color:white;
+	font-size: 48px !important;
+	text-decoration: none;
+}
+
+.professionalPage {
+	background-color: black;
+	color: #f8f9ff;
+	position: fixed;
+	height: 80%;
+	width: 100%;
+ 	top: 15%;
+	left: -100%;
+}
+
+.project li {
+	padding: 0.2em;
+}
+
+.personalPage {
+	background-color: #f5d5e0;
+	color: black;
+	position: fixed;
+	height: 80%;
+	width: 100%;
+ 	top: 15%;
+	left: 100%;
 }
