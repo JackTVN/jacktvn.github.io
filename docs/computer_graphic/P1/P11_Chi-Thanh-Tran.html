@@ -1,0 +1,644 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My First Rendering Algo</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #050510;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #info {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    #buttons {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      flex-direction: column;
+      row-gap: 6px;
+    }
+
+    #button {
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      border: 1px solid white;
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1.4;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="info">
+    <b>Projection</b><br>
+  </div>
+  <div id="buttons">
+    <a id="button" onclick="toSite1()"> Clean </a>
+    <a id="button" onclick="toSite2()"> Pixelated </a>
+    <a id="button" onclick="toSite3()"> Triangles </a>
+  </div>
+
+<script>
+
+  // For seamless transition
+  function toSite1() {
+    let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    window.location.href = "P11_Chi-Thanh-Tran.html" + query
+  }
+
+  function toSite2() {
+    let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    window.location.href = "P1G_Chi-Thanh-Tran.html" + query
+  }
+
+  function toSite3() {
+    let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    window.location.href = "P1T_Chi-Thanh-Tran.html" + query
+  }
+
+  //we add shapes (like lines) to this canvas
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const params = new URLSearchParams(window.location.search);
+  const camX = Number(params.get("x")) || 0;
+  const camY = Number(params.get("y")) || 0.5;
+  const camZ = Number(params.get("z")) || -12.01;
+
+  console.log(params);
+  
+
+  let camera = {x: camX, y: camY, z: camZ};
+
+  // Sync canvas size with the 2nd part of project for more seamless transition
+  const rows = 200;
+  const cols = 320;
+
+  const CanvasScale = 4; // Set to similar to otherside
+
+  canvas.width = cols * CanvasScale;
+  canvas.height = rows * CanvasScale;
+
+  /*
+  //an array of objects
+  //    to access the first 'x' coordinate you could type vertices[0].x
+  let vertices = [ 
+    { x:  1,  y: 1,  z: 1},   // A, idx 0
+    { x: -1,  y: 1,  z: 1},   // B, idx 1
+    { x:  1,  y: -1, z: 1},   // C, idx 2
+    { x: -1,  y: -1, z:  1},  // D, idx 3
+    { x:  1,  y: 1,  z: -1},  // E, idx 4
+    { x: -1,  y: 1,  z: -1},  // F, idx 5
+    { x:  1,  y: -1, z:  -1}, // G, idx 6
+    { x: -1,  y: -1, z: -1}   // H, idx 7
+  ];
+
+  // an array of the indics for the two vertices in each edge
+  let edges = [
+    [0, 1], //AB
+    [0, 2], //AC
+    [0, 4], //AE
+    [2, 3], //CD
+    [1, 3], //BD
+    [2, 6], //CG
+    [4, 5], //EF
+    [4, 6], //EG
+    [1, 5], //BF
+    [6, 7], //GH
+    [5, 7], //FH
+    [3, 7], //DH
+  ];
+  */
+
+  const cube = {
+    vertices: [
+      { x:  1,  y: 1,  z: 1},   // A, idx 0
+      { x: -1,  y: 1,  z: 1},   // B, idx 1
+      { x:  1,  y: -1, z: 1},   // C, idx 2
+      { x: -1,  y: -1, z:  1},  // D, idx 3
+      { x:  1,  y: 1,  z: -1},  // E, idx 4
+      { x: -1,  y: 1,  z: -1},  // F, idx 5
+      { x:  1,  y: -1, z: -1}, // G, idx 6
+      { x: -1,  y: -1, z: -1}   // H, idx 7
+    ],
+
+    edges: [
+      [0, 1], //AB
+      [0, 2], //AC
+      [0, 4], //AE
+      [2, 3], //CD
+      [1, 3], //BD
+      [2, 6], //CG
+      [4, 5], //EF
+      [4, 6], //EG
+      [1, 5], //BF
+      [6, 7], //GH
+      [5, 7], //FH
+      [3, 7], //DH
+    ]
+  }
+
+  const light_post_left = {
+    vertices: [
+      { x: 0, y: -1, z: 0 },
+      { x: 0, y: 0.9, z: 0 },
+      { x: 0.2, y: 1, z: 0 },
+      { x: 0.1, y: 0.9, z: 0.1 },
+      { x: 0.1, y: 0.9, z: -0.1 },
+      { x: 0.3, y: 0.9, z: -0.1 },
+      { x: 0.3, y: 0.9, z: 0.1 },
+    ],
+
+    edges: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [2, 4],
+      [2, 5],
+      [2, 6],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 3],
+    ],
+
+    color: "#FFFFFF"
+  }
+
+  const light_post_right = {
+    vertices: [
+      { x: 0, y: -1, z: 0 },
+      { x: 0, y: 0.9, z: 0 },
+      { x: -0.2, y: 1, z: 0 },
+      { x: -0.1, y: 0.9, z: 0.1 },
+      { x: -0.1, y: 0.9, z: -0.1 },
+      { x: -0.3, y: 0.9, z: -0.1 },
+      { x: -0.3, y: 0.9, z: 0.1 },
+    ],
+
+    edges: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [2, 4],
+      [2, 5],
+      [2, 6],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 3],
+    ],
+
+    color: "#FFFFFF"
+  }
+
+  const square_mountain = {
+    vertices: [
+      { x: 0, y: 1, z: 0 },
+      { x: -1, y: -1, z: 1 },
+      { x: 1, y: -1, z: 1 },
+      { x: 1, y: -1, z: -1 },
+      { x: -1, y: -1, z: -1 },
+
+    ],
+
+    edges: [
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 1],
+    ],
+
+    color: "#336633"
+  }
+  
+  const triangle_mountain = {
+    vertices: [
+      { x: 0, y: 1, z: 0 },
+      { x: -0.6, y: -1, z: 1 },
+      { x: 0.87, y: -1, z: -0.5 },
+      { x: -0.87, y: -1, z: -0.5 },
+    ],
+
+    edges: [
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [1, 2],
+      [2, 3],
+      [3, 1],
+    ],
+
+    color: "#336633"
+  }
+  
+  const small_rock = {
+    vertices: [
+      // Top
+      { x:  0.05, y:  1.00, z:  0.00 }, // 0
+
+      // Upper ring
+      { x: -0.35, y:  0.37, z:  0.30 }, // 1
+      { x:  0.30, y:  0.47, z:  0.35 }, // 2
+      { x:  0.40, y:  0.26, z: -0.25 }, // 3
+      { x: -0.30, y:  0.26, z: -0.35 }, // 4
+
+      // Lower ring / base
+      { x: -0.65, y: -0.89, z:  0.40 }, // 5
+      { x:  0.45, y: -1.00, z:  0.45 }, // 6
+      { x:  0.60, y: -0.89, z: -0.35 }, // 7
+      { x: -0.50, y: -1.00, z: -0.45 }, // 8
+    ],
+
+    edges: [
+      // Top to upper ring
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+
+      // Upper ring
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 1],
+
+      // Upper to lower ring
+      [1, 5],
+      [1, 8],
+      [2, 5],
+      [2, 6],
+      [3, 6],
+      [3, 7],
+      [4, 7],
+      [4, 8],
+
+      // Lower ring
+      [5, 6],
+      [6, 7],
+      [7, 8],
+      [8, 5],
+    ],
+
+    color: "#666666",
+  }
+
+
+  // Road is basically cube but darker, and then we scaled it down to a slab when drawing
+  let road = structuredClone(cube);
+  road.color = "#222222";
+
+  // Global draw function for each object, in case we want to draw multiple
+  function drawObject(obj, global_position, scale = [1, 1, 1], color_overwrite = "-1") {
+    let projectedVertices = [];
+
+    let scaledObj = structuredClone(obj);
+
+    scaledObj.vertices.forEach(vertex => {
+      vertex.x *= scale[0];
+      vertex.y *= scale[1];
+      vertex.z *= scale[2];
+    });
+
+    // If all vertices are behind the camera, don't draw the object
+    if (global_position.z + Math.max(...scaledObj.vertices.map(v => v.z)) < camera.z) {
+      return;
+    }
+
+    // For each vertices with z behind camera: 
+    // Find the intersection between the camera plane and every edges from the point behind camera to the point in front of camera
+    // and replace the point behind camera with that intersection point. May add some vertices/edges? 
+    // i and j are expected behind and infront vertex
+    for (let i = 0; i < scaledObj.vertices.length; i++) {
+      let vertex = scaledObj.vertices[i];
+
+      // Get vertices' world z to check if it's behind camera
+      let worldZ = vertex.z + global_position.z;
+      if (worldZ < camera.z - 0.00001) { // Have the cutoff line a bit further than the camera to avoid screen clipping
+        // Check each edge that include this vertex
+        scaledObj.edges.forEach(edge => {
+          if (edge.includes(i)) {
+            let j = edge[0] === i ? edge[1] : edge[0];
+            let otherVertex = scaledObj.vertices[j];
+
+            // Check if the other vertex is in front of camera
+            let otherWorldZ = otherVertex.z + global_position.z;
+            if (otherWorldZ >= camera.z - 0.00001) { // Similar to above
+              let t = (camera.z - worldZ) / (otherWorldZ - worldZ);
+              let intersection = {
+                x: vertex.x + t * (otherVertex.x - vertex.x),
+                y: vertex.y + t * (otherVertex.y - vertex.y),
+                z: camera.z + 0.00001 - global_position.z // I'm not gonna lie at this point I have no idea what I'm doing but it work
+              };
+
+              // Add intersection
+              scaledObj.vertices.push(intersection);
+              let newIndex = scaledObj.vertices.length - 1;
+
+              // Replace the vertex behind camera with the intersection in the edge
+              if (edge[0] === i) {
+                edge[0] = newIndex;
+              } else {
+                edge[1] = newIndex;
+              }
+
+              console.log(intersection);
+              console.log(scaledObj.edges);
+            } else {
+              // Both vertices are behind camera, remove the edge
+              scaledObj.edges = scaledObj.edges.filter(e => e !== edge);
+            }
+          }
+        });
+      }
+    };
+
+    for(let v = 0; v < scaledObj.vertices.length; v++){
+       //console.log("original position:");  //helpful to print things
+       //console.log( scaledObj.vertices[v] );
+
+       //console.log("camera-relative position");
+       let camVert = {}; 
+       // Get this by offsetting the v position by camera position
+       camVert.x = scaledObj.vertices[v].x + global_position.x - camera.x; 
+       camVert.y = scaledObj.vertices[v].y + global_position.y - camera.y; 
+       camVert.z = scaledObj.vertices[v].z + global_position.z - camera.z; 
+       //console.log( camVert );
+
+       //console.log("projected position"); 
+       let canvasPos = {};
+       // Do the triangle formula thing to get the projected position on a base 1x1 2D plane (centered at 0, 0)
+       canvasPos.u = camVert.x / camVert.z;  
+       canvasPos.v = camVert.y / camVert.z;  
+       //console.log( canvasPos );
+
+       //console.log("scale and center"); 
+       // Scale the 1x1 2D plane position to actual canvas size + centering it
+       canvasPos.u = canvasPos.u * canvas.width + canvas.width/2;
+       canvasPos.v = canvasPos.v * canvas.height + canvas.height/2;
+       //console.log( canvasPos );
+
+       projectedVertices.push(canvasPos);
+       //console.log("---------------"); 
+
+    }
+
+    //loop through the edges
+    //  find the newly computed projected vertices - 2 per edge
+    //  draw the line
+    for(let e = 0; e < scaledObj.edges.length; e++){
+      console.log("Edge: " + scaledObj.edges[e]);
+      //first vertex
+      let e1 = scaledObj.edges[e][0]; //idx
+      let u1 = projectedVertices[ e1 ].u; 
+      let v1 = canvas.height - projectedVertices[ e1 ].v;
+
+      //second vertex
+      let e2 = scaledObj.edges[e][1]; //idx
+      let u2 = projectedVertices[ e2 ].u;
+      let v2 = canvas.height - projectedVertices[ e2 ].v;
+
+      console.log("Camera Position: " + camera.x + ", " + camera.y + ", " + camera.z);
+      console.log("Original Vertices: " + scaledObj.vertices[e1].x + ", " + scaledObj.vertices[e1].y + ", " + scaledObj.vertices[e1].z + " and " + scaledObj.vertices[e2].x + ", " + scaledObj.vertices[e2].y + ", " + scaledObj.vertices[e2].z);
+      console.log("Projected Vertices: " + u1 + ", " + v1 + " and " + u2 + ", " + v2);
+
+      // Just in case
+      if (Math.abs(u1) === Infinity || Math.abs(u2) === Infinity || Math.abs(v1) === Infinity || Math.abs(v2) === Infinity) {
+        console.log("Skipping line due to Infinity values");
+        continue;
+      }
+
+      if (color_overwrite != "-1") drawLine(u1, v1, u2, v2, color_overwrite);
+      else drawLine(u1, v1, u2, v2, scaledObj.color || "#FFFFFF");
+    }
+  }
+
+  /*
+  function draw(){
+    //here we set up and clear the canvas, every draw frame
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#050510";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // here we will store u,v coordinates for the vertices, 
+    // projected onto our 2d plane
+    let projectedVertices = [];
+
+    //- loop through the original vertices (X, Y, Z)
+    //- and determine their position in 3D space relative to camera (x, y, z)
+    //- then project them onto the 2D plane
+    for(let v = 0; v < vertices.length; v++){   //  you could also write it foreach...
+       console.log("original position:");  //helpful to print things
+       console.log( vertices[v] );
+
+       console.log("camera-relative position");
+       let camVert = {}; 
+       // Get this by offsetting the v position by camera position
+       camVert.x = vertices[v].x - camera.x; //**** TO DO
+       camVert.y = vertices[v].y - camera.y; //**** TO DO
+       camVert.z = vertices[v].z - camera.z; //**** TO DO
+       console.log( camVert );
+
+       console.log("projected position"); 
+       let canvasPos = {};
+       // Do the triangle formula thing to get the projected position on a base 1x1 2D plane (centered at 0, 0)
+       canvasPos.u = camVert.x / camVert.z; //**** TO DO  
+       canvasPos.v = camVert.y / camVert.z; //**** TO DO 
+       console.log( canvasPos );
+
+       console.log("scale and center"); 
+       // Scale the 1x1 2D plane position to actual canvas size + centering it
+       canvasPos.u = canvasPos.u * canvas.width + canvas.width/2;
+       canvasPos.v = canvasPos.v * canvas.height + canvas.height/2;
+       console.log( canvasPos );
+
+       projectedVertices.push(canvasPos);
+       console.log("---------------"); 
+
+    }
+
+    //loop through the edges
+    //  find the newly computed projected vertices - 2 per edge
+    //  draw the line
+    for(let e = 0; e < edges.length; e++){
+      
+      //first vertex
+      let e1 = edges[e][0]; //idx
+      let u1 = projectedVertices[ e1 ].u; 
+      let v1 = canvas.height - projectedVertices[ e1 ].v;  //TO DO- explain why did I do this?
+
+      // The reason for the subtraction on v1 is due to the resulting coordinate of projectedVertices being a flipped value
+      // compared to the original coordinate given.
+      // The original coordinate system (which is used by a lot of system, including Blender)
+      // have positive xy value being top-right, while the coordinate system of JS canvas have the positive xy value being bottom-right. 
+      // This is also why v1/y need to be flipped, but u1/x stay the same.
+      // This is actually not noticable in the current example cube due to its symmetric nature, 
+      // but will be noticable when changing certain value.
+
+      // The same go for v2 below
+
+      //second vertex
+      let e2 = edges[e][1]; //idx
+      let u2 = projectedVertices[ e2 ].u;
+      let v2 = canvas.height - projectedVertices[ e2 ].v;  //TO DO- explain why did I do this?
+
+      drawLine(u1, v1, u2, v2);
+    }
+  }
+  */
+
+  function draw() {
+    // clear the canvas
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#050510";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Horizon
+    drawLine(0, canvas.height / 2, canvas.width, canvas.height / 2, "#444444");
+
+    drawObject(road, {x: 0, y: -0.005, z: 0}, [1, 0.01, 2000]);
+
+    // Mountain 
+    drawObject(square_mountain, {x: -20, y: 5, z: 10}, [5, 5, 5], "#486c1f");
+    drawObject(square_mountain, {x: 10, y: 2, z: 20}, [2, 2, 2], "#418c56");
+    drawObject(square_mountain, {x: -12, y: 3, z: 30}, [5, 3, 5], "#376c23");
+    drawObject(triangle_mountain, {x: 6, y: 5, z: 40}, [2, 5, 2], "#305c1f");
+    drawObject(triangle_mountain, {x: -8, y: 4, z: 50}, [5, 4, 2], "#156e5b");
+    drawObject(square_mountain, {x: 8, y: 3, z: 60}, [1, 3, 5], "#49702c");
+    drawObject(triangle_mountain, {x: -6, y: 5, z: 70}, [3, 5, 3], "#486c1f");
+    drawObject(square_mountain, {x: 4, y: 2, z: 80}, [1, 2, 2], "#729841");
+
+    // Rocc
+    drawObject(small_rock, {x: -3, y: 0.5, z: -2}, [1,0.5,0.5]);
+    drawObject(small_rock, {x: 2, y: 0.25, z: -4}, [0.5,0.25,0.5]);
+
+    // Road line
+    for (let i = 0; i < 30; i++) {
+      drawObject(cube, {x: 0, y: -0.0025, z: i * 10}, [0.1, 0.005, 2]);
+    }
+
+    for (let i = 0; i < 10; i++) {
+      drawObject(light_post_left, {x: -1, y: 0.5, z: -10 + i * 30}, [0.5, 0.5, 0.5]);
+      drawObject(light_post_right, {x: 1, y: 0.5, z: -10 + i * 30}, [0.5, 0.5, 0.5]);
+
+      drawObject(light_post_left, {x: -1, y: 1, z: -25 + i * 30});
+      drawObject(light_post_right, {x: 1, y: 1, z: -25 + i * 30});
+    }
+  }
+
+  //This uses a built in 'drawLine' function, provided by the javascript canvas
+  function drawLine(x1, y1, x2, y2, color = "#FFFFFF"){
+    ctx.lineWidth = 2;
+
+    ctx.strokeStyle = color;
+
+    //this is how you draw a line on the canvas 
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2, y2);
+    ctx.stroke();
+  }
+
+  // Alternative logic to remove key held delay
+  const keysPressed = {};
+
+  window.addEventListener('keydown', (e) => {
+    console.log(`Initial press: ${e.key}`)
+    keysPressed[e.code] = true;
+  });
+
+  window.addEventListener('keyup', (e) => {
+    keysPressed[e.code] = false;
+  });
+
+  // do nothing for now....
+  document.addEventListener("keydown", (event) => {
+    event.preventDefault();
+    if (event.key === "KeyR" || event.key === "r") {
+      console.log(`Initial press: ${event.key}`)
+      //****TO DO: reset camera
+      camera.x = 0;
+      camera.y = 0;
+      camera.z = -10;
+      console.log("Reset");
+      draw();
+    }
+  });
+
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    draw();
+  }
+
+  let speedScale = 1;
+
+  function update() {
+    if (keysPressed['ShiftLeft']) {
+      speedScale = 5;
+    } else {
+      speedScale = 1;
+    }
+
+    if (keysPressed['KeyW']) {
+      camera.z += 0.1 * speedScale;
+      draw();
+    }
+
+    if (keysPressed['KeyS']) {
+      camera.z -= 0.1 * speedScale;
+      draw();
+    }
+
+    if (keysPressed['KeyA']) {
+      camera.x -= 0.1;
+      draw();
+    }
+
+    if (keysPressed['KeyD']) {
+      camera.x += 0.1;
+      draw();
+    }
+  }
+
+
+  //window.addEventListener("resize", resizeCanvas);
+  //resizeCanvas();
+
+  draw();
+  
+  setInterval(update, 30);
+
+
+
+</script>
+</body>
+</html>

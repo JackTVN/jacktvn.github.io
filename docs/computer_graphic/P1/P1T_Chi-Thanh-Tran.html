@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>My First Rendering Algo</title>
+  <style>
+    body {
+      margin: 0;
+      overflow: hidden;
+      background: #050510;
+      color: white;
+      font-family: Arial, sans-serif;
+    }
+
+    canvas {
+      display: block;
+    }
+
+    #info {
+      position: fixed;
+      top: 12px;
+      left: 12px;
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+
+    #buttons {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      flex-direction: column;
+      row-gap: 6px;
+    }
+
+    #button {
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      border: 1px solid white;
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1.4;
+      text-align: center;
+    }
+  </style>
+</head>
+<body>
+  <canvas id="canvas"></canvas>
+
+  <div id="info">
+    <b>Pixel grid test</b><br>
+  </div>
+  <div id="buttons">
+    <a id="button" onclick="toSite1()"> Clean </a>
+    <a id="button" onclick="toSite2()"> Pixelated </a>
+    <a id="button" onclick="toSite3()"> Triangles </a>
+  </div>
+
+<script>
+
+  // For seamless transition
+  function toSite1() {
+    let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    window.location.href = "P11_Chi-Thanh-Tran.html" + query
+  }
+
+  function toSite2() {
+    let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    window.location.href = "P1G_Chi-Thanh-Tran.html" + query
+  }
+
+  function toSite3() {
+    let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    window.location.href = "P1T_Chi-Thanh-Tran.html" + query
+  }
+
+  //we add shapes (like lines) to this canvas
+  const canvas = document.getElementById("canvas");
+  const ctx = canvas.getContext("2d");
+
+  const params = new URLSearchParams(window.location.search);
+  const camX = Number(params.get("x")) || 0;
+  const camY = Number(params.get("y")) || 0.5;
+  const camZ = Number(params.get("z")) || -12.01;
+
+  let camera = {x: camX, y: camY, z: camZ};
+
+  const rows = 200;
+  const cols = 320;
+  const pixelGrid = Array.from({ length: cols }, () => Array(rows).fill("#050510"));
+  const pixelDepth = Array.from({ length: cols }, () => Array(rows).fill(Infinity));
+
+  const CanvasScale = 4; // *5 was too big for my screen, so I change the code to make it more flexible
+
+  canvas.width = cols * CanvasScale;
+  canvas.height = rows * CanvasScale;
+
+  let seePixelOutline = false; 
+
+
+  const cube = {
+    vertices: [
+      { x:  1,  y: 1,  z: 1},   // A, idx 0
+      { x: -1,  y: 1,  z: 1},   // B, idx 1
+      { x:  1,  y: -1, z: 1},   // C, idx 2
+      { x: -1,  y: -1, z:  1},  // D, idx 3
+      { x:  1,  y: 1,  z: -1},  // E, idx 4
+      { x: -1,  y: 1,  z: -1},  // F, idx 5
+      { x:  1,  y: -1, z: -1}, // G, idx 6
+      { x: -1,  y: -1, z: -1}   // H, idx 7
+    ],
+
+    edges: [
+      [0, 1], //AB
+      [0, 2], //AC
+      [0, 4], //AE
+      [2, 3], //CD
+      [1, 3], //BD
+      [2, 6], //CG
+      [4, 5], //EF
+      [4, 6], //EG
+      [1, 5], //BF
+      [6, 7], //GH
+      [5, 7], //FH
+      [3, 7], //DH
+    ],
+
+    triangles: [
+      [0, 1, 3], // ABD
+      [0, 3, 2], // ADC
+
+      [4, 6, 7], // EGH
+      [4, 7, 5], // EHF
+
+      [0, 4, 5], // AEF
+      [0, 5, 1], // AFB
+
+      [2, 3, 7], // CDH
+      [2, 7, 6], // CHG
+
+      [0, 2, 6], // ACG
+      [0, 6, 4], // AGE
+
+      [1, 5, 7], // BFH
+      [1, 7, 3]  // BDH  
+    ]
+  }
+
+  const light_post_left = {
+    vertices: [
+      { x: 0, y: -1, z: 0 },
+      { x: 0, y: 0.9, z: 0 },
+      { x: 0.2, y: 1, z: 0 },
+      { x: 0.1, y: 0.9, z: 0.1 },
+      { x: 0.1, y: 0.9, z: -0.1 },
+      { x: 0.3, y: 0.9, z: -0.1 },
+      { x: 0.3, y: 0.9, z: 0.1 },
+    ],
+
+    edges: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [2, 4],
+      [2, 5],
+      [2, 6],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 3],
+    ],
+
+    triangles: [
+      [2, 3, 4],
+      [2, 4, 5],
+      [2, 5, 6],
+      [2, 6, 3],
+
+      // Add bottom. I could make it hollow, but idk it doesn't seem easy
+      [3, 6, 5],
+      [3, 5, 4],
+    ],
+
+    color: "#FFFFFF",
+    color_triangle: [
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFF00",
+      "#FFFF00",
+    ]
+  }
+
+  const light_post_right = {
+    vertices: [
+      { x: 0, y: -1, z: 0 },
+      { x: 0, y: 0.9, z: 0 },
+      { x: -0.2, y: 1, z: 0 },
+      { x: -0.1, y: 0.9, z: 0.1 },
+      { x: -0.1, y: 0.9, z: -0.1 },
+      { x: -0.3, y: 0.9, z: -0.1 },
+      { x: -0.3, y: 0.9, z: 0.1 },
+    ],
+
+    edges: [
+      [0, 1],
+      [1, 2],
+      [2, 3],
+      [2, 4],
+      [2, 5],
+      [2, 6],
+      [3, 4],
+      [4, 5],
+      [5, 6],
+      [6, 3],
+    ],
+
+    triangles: [
+      [2, 3, 4],
+      [2, 4, 5],
+      [2, 5, 6],
+      [2, 6, 3],
+
+      // Add bottom. I could make it hollow, but idk it doesn't seem easy
+      [3, 6, 5],
+      [3, 5, 4],
+    ],
+
+    color: "#FFFFFF",
+    color_triangle: [
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFFFF",
+      "#FFFF00",
+      "#FFFF00",
+    ]
+  }
+
+  const square_mountain = {
+    vertices: [
+      { x: 0, y: 1, z: 0 },
+      { x: -1, y: -1, z: 1 },
+      { x: 1, y: -1, z: 1 },
+      { x: 1, y: -1, z: -1 },
+      { x: -1, y: -1, z: -1 },
+
+    ],
+
+    edges: [
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 1],
+    ],
+
+    triangles: [
+      [0, 1, 2],
+      [0, 2, 3],
+      [0, 3, 4],
+      [0, 4, 1],
+      [1, 4, 3],
+      [1, 3, 2],
+    ],
+
+    color: "#336633",
+    color_triangle: [
+      "#17ac6b",
+      "#729841",
+      "#47c687",
+      "#81be57",
+      "#186050",
+      "#186050",
+    ]
+  }
+  
+  const triangle_mountain = {
+    vertices: [
+      { x: 0, y: 1, z: 0 },
+      { x: -0.4, y: -1, z: -1 },
+      { x: 0.87, y: -1, z: 0.7 },
+      { x: -0.97, y: -1, z: 0.3 },
+    ],
+
+    edges: [
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [1, 2],
+      [2, 3],
+      [3, 1],
+    ],
+
+    triangles: [
+      [0, 1, 2],
+      [0, 2, 3],
+      [0, 3, 1],
+      [1, 2, 3],
+    ],
+
+    color: "#336633",
+    color_triangle: [
+      "#207d51",
+      "#129c7b",
+      "#36904b",
+      "#186050",
+    ]
+  }
+  
+  const small_rock = {
+    vertices: [
+      // Top
+      { x:  0.05, y:  1.00, z:  0.00 }, // 0
+
+      // Upper ring
+      { x: -0.35, y:  0.37, z:  0.30 }, // 1
+      { x:  0.30, y:  0.47, z:  0.35 }, // 2
+      { x:  0.40, y:  0.26, z: -0.25 }, // 3
+      { x: -0.30, y:  0.26, z: -0.35 }, // 4
+
+      // Lower ring / base
+      { x: -0.65, y: -0.89, z:  0.40 }, // 5
+      { x:  0.45, y: -1.00, z:  0.45 }, // 6
+      { x:  0.60, y: -0.89, z: -0.35 }, // 7
+      { x: -0.50, y: -1.00, z: -0.45 }, // 8
+    ],
+
+    edges: [
+      // Top to upper ring
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+
+      // Upper ring
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 1],
+
+      // Upper to lower ring
+      [1, 5],
+      [1, 8],
+      [2, 5],
+      [2, 6],
+      [3, 6],
+      [3, 7],
+      [4, 7],
+      [4, 8],
+
+      // Lower ring
+      [5, 6],
+      [6, 7],
+      [7, 8],
+      [8, 5],
+    ],
+
+    triangles: [
+      // Top
+      [0, 1, 2],
+      [0, 2, 3],
+      [0, 3, 4],
+      [0, 4, 1],
+
+      // Upper sides
+      [1, 5, 6],
+      [1, 6, 2],
+      [2, 6, 7],
+      [2, 7, 3],
+      [3, 7, 8],
+      [3, 8, 4],
+      [4, 8, 5],
+      [4, 5, 1],
+
+      // Bottom
+      [5, 8, 7],
+      [5, 7, 6],
+    ],
+
+    color: "#666666",
+
+    color_triangle: [
+      "#777777",
+      "#626262",
+      "#707070",
+      "#595959",
+
+      "#696969",
+      "#7A7A7A",
+      "#555555",
+      "#686868",
+
+      "#777777",
+      "#5D5D5D",
+      "#646464",
+      "#707070",
+
+      "#4E4E4E",
+      "#595959",
+    ]
+  }
+
+  // Road is basically cube but darker, and then we scaled it down to a slab when drawing
+  let road = structuredClone(cube);
+  road.color = "#222222";
+
+
+   //light up a couple of pixels 
+  setPixelColor(100,100,"#FFFFFF")
+  setPixelColor(100,101,"#FFFFFF")
+  setPixelColor(101,100,"#FFFFFF")
+  setPixelColor(101,101,"#FFFFFF")
+  setPixelColor(102,101,"#FFFFFF")
+
+  // Global draw function for each object, in case we want to draw multiple
+  function drawObject(obj, global_position, scale = [1, 1, 1], color_overwrite = "-1") {
+    let projectedVertices = [];
+
+    let scaledObj = structuredClone(obj);
+
+    scaledObj.vertices.forEach(vertex => {
+      vertex.x *= scale[0];
+      vertex.y *= scale[1];
+      vertex.z *= scale[2];
+    });
+
+    // If all vertices are behind the camera, don't draw the object
+    if (global_position.z + Math.max(...scaledObj.vertices.map(v => v.z)) < camera.z) {
+      return;
+    }
+
+    // For each vertices with z behind camera: 
+    // Find the intersection between the camera plane and every edges from the point behind camera to the point in front of camera
+    // and replace the point behind camera with that intersection point. May add some vertices/edges
+    // i and j are expected behind and infront vertex
+    for (let i = 0; i < scaledObj.vertices.length; i++) {
+      let vertex = scaledObj.vertices[i];
+
+      // Get vertices' world z to check if it's behind camera
+      let worldZ = vertex.z + global_position.z;
+      if (worldZ < camera.z - 0.001) { // Have the cutoff line a bit further than the camera to avoid screen clipping
+        // Check each edge that include this vertex
+        scaledObj.edges.forEach(edge => {
+          if (edge.includes(i)) {
+            let j = edge[0] === i ? edge[1] : edge[0];
+            let otherVertex = scaledObj.vertices[j];
+
+            // Check if the other vertex is in front of camera
+            let otherWorldZ = otherVertex.z + global_position.z;
+            if (otherWorldZ >= camera.z - 0.001) { // Similar to above
+              let t = (camera.z - worldZ) / (otherWorldZ - worldZ);
+              let intersection = {
+                x: vertex.x + t * (otherVertex.x - vertex.x),
+                y: vertex.y + t * (otherVertex.y - vertex.y),
+                z: camera.z + 0.001 - global_position.z // I'm not gonna lie at this point I have no idea what I'm doing but it work
+              };
+
+              // Add intersection
+              scaledObj.vertices.push(intersection);
+              let newIndex = scaledObj.vertices.length - 1;
+
+              // Replace the vertex behind camera with the intersection in the edge
+              if (edge[0] === i) {
+                edge[0] = newIndex;
+              } else {
+                edge[1] = newIndex;
+              }
+
+              // Check each triangle that include both the vertex behind the camera and the vertex being checked beforehand
+              // Replace point behind camera with new intersected
+              // THIS DOES NOT FIX EVERYTHING, BUT IT SHOULD FIX MOST
+              scaledObj.triangles.forEach(triangle => {
+                if (triangle.includes(i)) {
+                    if (triangle[0] == i) triangle[0] = newIndex
+                    if (triangle[1] == i) triangle[1] = newIndex
+                    if (triangle[2] == i) triangle[2] = newIndex
+                  }
+              })
+
+              //console.log(intersection);
+              //console.log(scaledObj.edges);
+            } else {
+              // Both vertices are behind camera, remove the edge
+              scaledObj.edges = scaledObj.edges.filter(e => e !== edge);
+            }
+          }
+        });
+      }
+    };
+
+    for(let v = 0; v < scaledObj.vertices.length; v++){
+      //console.log("original position:");  //helpful to print things
+      //console.log( scaledObj.vertices[v] );
+
+      //console.log("camera-relative position");
+      let camVert = {}; 
+      // Get this by offsetting the v position by camera position
+      camVert.x = scaledObj.vertices[v].x + global_position.x - camera.x; 
+      camVert.y = scaledObj.vertices[v].y + global_position.y - camera.y; 
+      camVert.z = scaledObj.vertices[v].z + global_position.z - camera.z; 
+      //console.log( camVert );
+
+      //console.log("projected position"); 
+      let canvasPos = {};
+      // Do the triangle formula thing to get the projected position on a base 1x1 2D plane (centered at 0, 0)
+      canvasPos.u = camVert.x / camVert.z;  
+      canvasPos.v = camVert.y / camVert.z;  
+      //console.log( canvasPos );
+
+      //console.log("scale and center"); 
+      // Scale the 1x1 2D plane position to actual canvas size + centering it
+      canvasPos.u = canvasPos.u * canvas.width + canvas.width/2;
+      canvasPos.v = canvasPos.v * canvas.height + canvas.height/2;
+      //console.log( canvasPos );
+
+      projectedVertices.push(canvasPos);
+      //console.log("---------------"); 
+    }
+
+    /*
+    // Comment this to not draw outline
+    for(let e = 0; e < scaledObj.edges.length; e++){
+      //console.log("Edge: " + scaledObj.edges[e]);
+      //first vertex
+      let e1 = scaledObj.edges[e][0]; //idx
+      let u1 = projectedVertices[ e1 ].u; 
+      let v1 = canvas.height - projectedVertices[ e1 ].v;
+
+      //second vertex
+      let e2 = scaledObj.edges[e][1]; //idx
+      let u2 = projectedVertices[ e2 ].u;
+      let v2 = canvas.height - projectedVertices[ e2 ].v;
+
+      //console.log("Camera Position: " + camera.x + ", " + camera.y + ", " + camera.z);
+      //console.log("Original Vertices: " + scaledObj.vertices[e1].x + ", " + scaledObj.vertices[e1].y + ", " + scaledObj.vertices[e1].z + " and " + scaledObj.vertices[e2].x + ", " + scaledObj.vertices[e2].y + ", " + scaledObj.vertices[e2].z);
+      //console.log("Projected Vertices: " + u1 + ", " + v1 + " and " + u2 + ", " + v2);
+
+      // Just in case
+      if (Math.abs(u1) === Infinity || Math.abs(u2) === Infinity || Math.abs(v1) === Infinity || Math.abs(v2) === Infinity) {
+        //console.log("Skipping line due to Infinity values");
+        continue;
+      }
+
+      drawLine(u1, v1, u2, v2, scaledObj.color || "#FFFFFF");
+    }
+    */
+
+    // Exclusive code to draw line of edges that are not in any triangle
+    for(let e = 0; e < scaledObj.edges.length; e++){
+      let e1 = scaledObj.edges[e][0]; //idx
+      let e2 = scaledObj.edges[e][1]; //idx
+      let inTriangle = false;
+
+      for (tri = 0; tri < scaledObj.triangles.length; tri++) {
+        if (scaledObj.triangles[tri].includes(e1) && scaledObj.triangles[tri].includes(e2)) {
+          inTriangle = true;
+          break;
+        }
+      }
+
+      if (inTriangle) break;
+
+      //first vertex
+      let u1 = projectedVertices[ e1 ].u; 
+      let v1 = canvas.height - projectedVertices[ e1 ].v;
+      let z1 = scaledObj.vertices[e1].z + global_position.z - camera.z; 
+
+      //second vertex
+      let u2 = projectedVertices[ e2 ].u;
+      let v2 = canvas.height - projectedVertices[ e2 ].v;
+      let z2 = scaledObj.vertices[e2].z + global_position.z - camera.z; 
+
+      //console.log("Camera Position: " + camera.x + ", " + camera.y + ", " + camera.z);
+      //console.log("Original Vertices: " + scaledObj.vertices[e1].x + ", " + scaledObj.vertices[e1].y + ", " + scaledObj.vertices[e1].z + " and " + scaledObj.vertices[e2].x + ", " + scaledObj.vertices[e2].y + ", " + scaledObj.vertices[e2].z);
+      //console.log("Projected Vertices: " + u1 + ", " + v1 + " and " + u2 + ", " + v2);
+
+      // Just in case
+      if (Math.abs(u1) === Infinity || Math.abs(u2) === Infinity || Math.abs(v1) === Infinity || Math.abs(v2) === Infinity) {
+        //console.log("Skipping line due to Infinity values");
+        continue;
+      }
+
+      drawLine(u1, v1, u2, v2, z1, z2, scaledObj.color || "#FFFFFF");
+    }
+
+    // Triangle time
+    for(let e = 0; e < scaledObj.triangles.length; e++){
+      // 1st point
+      let e1 = scaledObj.triangles[e][0]; //idx
+      let u1 = projectedVertices[e1].u; 
+      let v1 = canvas.height - projectedVertices[e1].v;
+
+      // 2nd point
+      let e2 = scaledObj.triangles[e][1]; //idx
+      let u2 = projectedVertices[e2].u; 
+      let v2 = canvas.height - projectedVertices[e2].v;
+      
+      // 3rd point
+      let e3 = scaledObj.triangles[e][2]; //idx
+      let u3 = projectedVertices[e3].u; 
+      let v3 = canvas.height - projectedVertices[e3].v;
+
+      // Just in case
+      if (Math.abs(u1) === Infinity || Math.abs(v1) === Infinity || 
+        Math.abs(u2) === Infinity || Math.abs(v2) === Infinity ||
+        Math.abs(u3) === Infinity || Math.abs(v3) === Infinity) {
+        continue;
+      }
+
+      
+      // Get camera-relative z position (only) to work with depth stuff
+
+      let z1 = scaledObj.vertices[e1].z + global_position.z - camera.z; 
+      let z2 = scaledObj.vertices[e2].z + global_position.z - camera.z; 
+      let z3 = scaledObj.vertices[e3].z + global_position.z - camera.z; 
+
+      if ('color_triangle' in scaledObj) {
+        drawTriangle(u1, v1, u2, v2, u3, v3, z1, z2, z3, scaledObj.color_triangle[e]);
+      } else {
+        // Backward compa
+        if (color_overwrite != "-1") {
+          drawTriangle(u1, v1, u2, v2, u3, v3, z1, z2, z3, color_overwrite);
+        } else {
+          drawTriangle(u1, v1, u2, v2, u3, v3, z1, z2, z3, scaledObj.color || "#FFFFFF");
+        }
+      }
+    }
+    
+    /* ALTERNATIVE METHOD TO PREVENT DESTRUCTION
+    let triangleObj = structuredClone(obj);
+    triangleObj.vertices.forEach(vertex => {
+      vertex.x *= scale[0];
+      vertex.y *= scale[1];
+      vertex.z *= scale[2];
+    });
+
+    let triangleProjected = []
+    // TEMPORARY RECALCULATION FOR TRIANGLE ONLY
+    for(let v = 0; v < triangleObj.vertices.length; v++){
+       //console.log("original position:");  //helpful to print things
+       //console.log( scaledObj.vertices[v] );
+
+       //console.log("camera-relative position");
+       let camVert = {}; 
+       // Get this by offsetting the v position by camera position
+       camVert.x = triangleObj.vertices[v].x + global_position.x - camera.x; 
+       camVert.y = triangleObj.vertices[v].y + global_position.y - camera.y; 
+       camVert.z = triangleObj.vertices[v].z + global_position.z - camera.z; 
+       //console.log( camVert );
+
+       //console.log("projected position"); 
+       let canvasPos = {};
+       // Do the triangle formula thing to get the projected position on a base 1x1 2D plane (centered at 0, 0)
+       canvasPos.u = camVert.x / camVert.z;  
+       canvasPos.v = camVert.y / camVert.z;  
+       //console.log( canvasPos );
+
+       //console.log("scale and center"); 
+       // Scale the 1x1 2D plane position to actual canvas size + centering it
+       canvasPos.u = canvasPos.u * canvas.width + canvas.width/2;
+       canvasPos.v = canvasPos.v * canvas.height + canvas.height/2;
+       //console.log( canvasPos );
+
+       triangleProjected.push(canvasPos);
+       //console.log("---------------"); 
+
+    }
+
+
+    // Triangle time
+    for(let e = 0; e < triangleObj.triangles.length; e++){
+      // 1st point
+      let e1 = triangleObj.triangles[e][0]; //idx
+      let u1 = triangleProjected[e1].u; 
+      let v1 = canvas.height - triangleProjected[e1].v;
+
+      // 2nd point
+      let e2 = triangleObj.triangles[e][1]; //idx
+      let u2 = triangleProjected[e2].u; 
+      let v2 = canvas.height - triangleProjected[e2].v;
+      
+      // 3rd point
+      let e3 = triangleObj.triangles[e][2]; //idx
+      let u3 = triangleProjected[e3].u; 
+      let v3 = canvas.height - triangleProjected[e3].v;
+
+      // Just in case
+      if (Math.abs(u1) === Infinity || Math.abs(v1) === Infinity || 
+        Math.abs(u2) === Infinity || Math.abs(v2) === Infinity ||
+        Math.abs(u3) === Infinity || Math.abs(v3) === Infinity) {
+        //console.log("Skipping line due to Infinity values");
+        continue;
+      }
+        
+
+      drawTriangle(u1, v1, u2, v2, u3, v3, scaledObj.color || "#FFFFFF");
+    }
+    */
+
+  }
+
+  function draw(){
+    //here we set up and clear the canvas, every draw frame
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+    ctx.fillStyle = "#050510";
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+    // Clear pixel color too
+    for(let u = 0; u < cols; u++){
+      for(let v = 0; v < rows; v++){
+        pixelGrid[u][v] = "#050510";
+        pixelDepth[u][v] = Infinity;
+      }
+    }
+
+    ctx.lineWidth = 1;
+    ctx.strokeStyle = "#444444";
+
+    drawObject(road, {x: 0, y: -0.005, z: 0}, [1, 0.01, 2000]);
+
+    // Mountain 
+    drawObject(square_mountain, {x: -20, y: 5, z: 10}, [5, 5, 5], "#486c1f");
+    drawObject(square_mountain, {x: 10, y: 2, z: 20}, [2, 2, 2], "#418c56");
+    drawObject(square_mountain, {x: -12, y: 3, z: 30}, [5, 3, 5], "#376c23");
+    drawObject(triangle_mountain, {x: 6, y: 5, z: 40}, [2, 5, 2], "#305c1f");
+    drawObject(triangle_mountain, {x: -8, y: 4, z: 50}, [5, 4, 2], "#156e5b");
+    drawObject(square_mountain, {x: 8, y: 3, z: 60}, [1, 3, 5], "#49702c");
+    drawObject(triangle_mountain, {x: -6, y: 5, z: 70}, [3, 5, 3], "#486c1f");
+    drawObject(square_mountain, {x: 4, y: 2, z: 80}, [1, 2, 2], "#729841");
+
+    // Rocc
+    drawObject(small_rock, {x: -3, y: 0.5, z: -2}, [1,0.5,0.5]);
+    drawObject(small_rock, {x: 2, y: 0.25, z: -4}, [0.5,0.25,0.5]);
+
+    // Road line
+    for (let i = 0; i < 30; i++) {
+      drawObject(cube, {x: 0, y: -0.0025, z: i * 10}, [0.1, 0.005, 2]);
+    }
+
+    for (let i = 0; i < 10; i++) {
+      drawObject(light_post_left, {x: -1, y: 0.5, z: -10 + i * 30}, [0.5, 0.5, 0.5]);
+      drawObject(light_post_right, {x: 1, y: 0.5, z: -10 + i * 30}, [0.5, 0.5, 0.5]);
+
+      drawObject(light_post_left, {x: -1, y: 1, z: -25 + i * 30});
+      drawObject(light_post_right, {x: 1, y: 1, z: -25 + i * 30});
+    }
+
+    // Horizon. Idk why infinity was not working
+    drawLine(0, canvas.height / 2, canvas.width, canvas.height / 2, 999999, 999999, "#112211");
+
+    for(v=0; v< 200; v++){
+      for(u=0; u<320; u++){
+        //console.log(u);
+        //console.log(v);
+        //console.log(pixelGrid[u][v]);
+        //console.log("----")
+
+        ctx.fillStyle = pixelGrid[u][v];
+        ctx.fillRect(u * CanvasScale, v*CanvasScale, CanvasScale, CanvasScale);
+
+        if( seePixelOutline ){
+          ctx.strokeRect(u*CanvasScale, v*CanvasScale, CanvasScale, CanvasScale);
+        }
+      }
+    }
+
+  }
+
+  function distanceToLine(u1, v1, u2, v2, u0, v0){
+    // return the distance from the point u0,v0 to the line segment defined by u1,v1 and u2,v2
+    // I got the formula here https://math.stackexchange.com/questions/2757318/distance-between-a-point-and-a-line-defined-by-2-points
+
+    return Math.abs((v2-v1)*(u0-u1) - (u2-u1)*(v0-v1)) / Math.sqrt(Math.pow(v2-v1, 2) + Math.pow(u2-u1, 2));
+  }
+
+  function drawLine(u1, v1, u2, v2, z1, z2, color = "#FFFFFF"){
+
+    //******** TO DO
+    //use the algorithm in the slides to incrementally fill
+    // in pixels going from u1,v1 to u2,v2
+    // you can use 'setPixelColor'
+    // note, you may need to handle 'cases'- ex.u1>u2 vs u2>u2 
+
+    // Strategy:
+    // uIter and vIter is use to handle different direction cases
+    // Every loop, choose the three pixel around the current pixel, facing the direction of the line (1 at the corner, and 2 next to that corner)
+    // Calculate the distance of each of those choice to the main line using math
+    // Iterate toward the choice with the shortest distance
+
+    // Round down by CanvasScale
+    u1 = Math.floor(u1 / CanvasScale);
+    v1 = Math.floor(v1 / CanvasScale);
+    u2 = Math.floor(u2 / CanvasScale);
+    v2 = Math.floor(v2 / CanvasScale);
+
+    let uMove = u1
+    let vMove = v1
+
+    let uIter = u1 < u2 ? 1 : u1 > u2 ? -1 : 0
+    let vIter = v1 < v2 ? 1 : v1 > v2 ? -1 : 0
+
+    if (uMove >= 0 && uMove < cols && vMove >= 0 && vMove < rows) {
+      setPixelColor(uMove, vMove, color, z1);
+    }
+
+    while (true) {
+      if (uMove === u2 && vMove === v2) {
+        return;
+      }
+
+      if (uMove === u2) {
+        vMove += vIter;
+      } 
+      
+      else if (vMove === v2) {
+        uMove += uIter;
+      }
+
+      else {
+        uMoveDistance = distanceToLine(u1, v1, u2, v2, uMove + uIter, vMove)
+        vMoveDistance = distanceToLine(u1, v1, u2, v2, uMove, vMove + vIter)
+        uvMoveDistance = distanceToLine(u1, v1, u2, v2, uMove + uIter, vMove + vIter)
+
+        if (uvMoveDistance < uMoveDistance && uvMoveDistance < vMoveDistance) {
+          uMove += uIter;
+          vMove += vIter;
+        } else if (uMoveDistance < vMoveDistance) {
+          uMove += uIter;
+        } else {
+          vMove += vIter;
+        }
+      }
+      
+      if (uMove >= 0 && uMove < cols && vMove >= 0 && vMove < rows) {
+        // Get z here
+        let len = ((u2 - u1)^2 + (v2 - v1)^2) ^ (1/2) 
+        let curLen = ((uMove - u1)^2 + (vMove - v1)^2) ^ (1/2)
+        let z = z1 + (curLen / len) * (z2 - z1)
+ 
+        setPixelColor(uMove, vMove, color, z);
+      }
+    }
+  }
+
+  function inTriangle(u1, v1, u2, v2, u3, v3, x, y){
+    // Half-plane
+    const d1 = (v1 - v2)*(x - u2) - (u1 - u2)*(y - v2);
+    const d2 = (v2 - v3)*(x - u3) - (u2 - u3)*(y - v3);
+    const d3 = (v3 - v1)*(x - u1) - (u3 - u1)*(y - v1);
+
+    const negative = (d1 <= 0) && (d2 <= 0) && (d3 <= 0);
+    const positive = (d1 >= 0) && (d2 >= 0) && (d3 >= 0);
+    
+    return (negative || positive);
+  }
+
+  function drawTriangle(u1, v1, u2, v2, u3, v3, z1, z2, z3, color = "#FFFFFF"){
+    // Round down by CanvasScale
+    u1 = Math.floor(u1 / CanvasScale);
+    v1 = Math.floor(v1 / CanvasScale);
+    u2 = Math.floor(u2 / CanvasScale);
+    v2 = Math.floor(v2 / CanvasScale);
+    u3 = Math.floor(u3 / CanvasScale);
+    v3 = Math.floor(v3 / CanvasScale);
+
+    min_u = Math.min(u1, u2, u3);
+    max_u = Math.max(u1, u2, u3);
+    min_v = Math.min(v1, v2, v3);
+    max_v = Math.max(v1, v2, v3);
+
+
+    // Just clip it to the biggest possible
+    min_u = Math.max(min_u, 0);
+    max_u = Math.min(max_u, 320);
+    min_v = Math.max(min_v, 0);
+    max_v = Math.min(max_v, 200);
+
+
+    for(i = min_u; i < max_u; i++){
+      for(j = min_v; j < max_v; j++){
+        if (i < 0 || i >= cols || j < 0 || j >= rows) continue;
+        
+        if (inTriangle(u1, v1, u2, v2, u3, v3, i, j)) {
+          // Get barycentric coordinate -> pixel depth
+          const d = (v2 - v3)*(u1 - u3) + (u3 - u2)*(v1 - v3);
+          const a = ((v2 - v3)*(i - u3) + (u3 - u2)*(j - v3)) / d;
+          const b = ((v3 - v1)*(i - u3) + (u1 - u3)*(j - v3)) / d;
+          const c = 1 - a - b
+          const z = a*z1 + b*z2 + c*z3
+
+          //console.log(u1, v1, u2, v2, u3, v3, i, j)
+          setPixelColor(i, j, color, z);
+        }
+      }
+    }
+
+    return
+  }
+
+
+  function setPixelColor(u,v,color,z = 0){
+    if (z < pixelDepth[u][v])
+    { 
+      pixelGrid[u][v] = color;
+      pixelDepth[u][v] = z;
+    } 
+  }
+  
+  function resizeCanvas() {
+    canvas.width = window.innerWidth;
+    canvas.height = window.innerHeight;
+    draw();
+  }
+
+  
+  // Dont use alternative event here because lag
+  document.addEventListener("keydown", (event) => {
+    //console.log(`Initial press: ${event.key}`)
+    event.preventDefault();
+      switch (event.key) {
+      case "w":
+        //****TO DO: Change camera z position a go closer
+        camera.z += 1;
+        //console.log("Up arrow pressed");
+        draw();
+        break;
+      case "s":
+        //****TO DO: Change camera z position go further away
+        camera.z -= 1;
+        //console.log("Down arrow pressed");
+        draw();
+        break;
+      case "a":
+        //****TO DO: Change camera x position move left
+        camera.x -= 1;
+        //console.log("Left arrow pressed");
+        draw();
+        break;
+      case "d":
+        //****TO DO: Change camera x position move right
+        camera.x += 1;
+        //console.log("Right arrow pressed");
+        draw();
+        break;
+      case "KeyR":
+        //****TO DO: reset camera
+        camera.x = 0;
+        camera.y = 0.5;
+        camera.z = -12.01;
+        //console.log("Reset");
+        draw();
+        break;
+
+      case "r":
+        // KeyR is not working for me for some reason, so I added this one too since it work
+        camera.x = 0;
+        camera.y = 0.5;
+        camera.z = -12.01;
+        //console.log("Reset");
+        draw();
+        break;
+        
+      default:
+        return; 
+    }
+  });
+
+  //window.addEventListener("resize", resizeCanvas);
+  //resizeCanvas();
+  draw(); // Initial draw
+
+
+
+</script>
+</body>
+</html>
