@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<style>
+body {
+    background-color: rgb(246, 246, 246);
+    font-family: "Times New Roman", Times, serif;
+    padding: 0 60px; line-height: 26px;
+}
+h1 {
+    text-align: center;
+}
+
+h2 {
+    font-size: 24px;
+}
+
+p, dl {
+    font-size: 18px;
+}
+
+dd {
+    margin-bottom: 8px;
+    margin-top: 8px;
+}
+
+.window-image {
+    display: grid;
+    grid-template-columns: auto auto;
+    grid-template-rows: auto auto;
+    align-items: center;
+    justify-content: center;
+    column-gap: 24px;
+    row-gap: 24px;
+}
+
+.tri-image {
+    display: grid;
+    grid-template-columns: auto auto auto;
+    align-items: center;
+    justify-content: center;
+    column-gap: 24px;
+    row-gap: 24px;
+}
+
+.image-desc {
+    font-size: 16px;
+    color: rgb(73, 73, 73);
+    text-align: center;
+}
+
+</style>
+<body>
+    <h1>Project Documentation</h1>
+    <h2>Design</h2>
+    <p>The design is a roadway with rocks and mountains scattered around, 
+        road lines and road lights are spread alongside the road. 
+        There is also a sun in the sky!</p><br>
+    <h2>Detail</h2>
+    <p>WASD to move (forward or sideway, no up-down control).</p>
+    <p>Hold Shift to run faster (only work in Clean Render).</p>
+    <p>R to reset the camera to starting position.</p>
+    <p>Q to change the sun to a moon, or vice versa (come with moving animation).</p>
+    <p>Click on one of the three buttons at the top-right to change the rendering style
+    (between clean line, pixelated line, or triangles). This will not reset the camera.</p><br>
+
+    <h2>Implementation</h2>
+    <dl>
+        <dt><i><b>World:</b></i> The project is built upon by objects, each of which consists of: </dt>
+        <dd>- Vertices: A list of vertices, each element is a dictionary of 3 properties 
+            (xyz position of said vertices in the world)</dd>
+        <dd>- Edges: A list of edges, each element is a pair of 2 indexes (AB) 
+            that represent an edge between vertices A and vertices B 
+            (said index is the same as their index in the vertices list)</dd>
+        <dd>- Triangles: A list of triangles, each element is a trio of 3 indexes (ABC) 
+            that represent a triangle between vertices ABC</dd>
+        <dd>- Color: The base color of the object. Used as default edges color</dd>
+        <dd>- Triangles Color: A list of equal size to the triangles list that hold the color value 
+            for each triangle in the same index</dd>
+        <br><dt><i><b>Pinhole Camera:</b></i> The project uses the pinhole camera implementation given by the course. </dt>
+        <dd>- The implementation works by casting every vertex onto a camera plane through a point of convergence 
+            (a point at the center, slightly in front of the camera), with some other cleaning steps 
+            (such as flipping the position to show the real orientation of the taken environment).</dd>
+        <dd>- The vertices projection and drawing step is done object-by-object. 
+            Each object is instantiated by a function that completes the pinhole camera projection 
+            of itself onto the screen.</dd>
+        <dd>- A divergence from the original implementation includes additional cleaning steps 
+            that deal with behind-the-convergence-point vertices. For each object instantiated, 
+            every vertex is checked for its position relative to the camera. In cases where a vertex 
+            is confirmed to be behind the camera, the function finds intersections of every vertex in front 
+            of the camera with said vertex and adds said intersections into the vertices list (as well as the edges). 
+            This essentially slices the object using the camera plane and removes the part behind the camera. 
+            In a case where all vertices of an object are behind the camera, said object can be ignored.</dd>
+        <br><div class="window-image">
+            <img src="images/bad_render_1.png">
+            <img src="images/good_render_1.png">
+            <img src="images/bad_render_2.png">
+            <img src="images/good_render_2.png">
+        </div>
+        <p class="image-desc">Messy calculation occur (left) when some of object’s vertices is behind the camera, compared to current implementation after fix (right)</p>
+        <br><dt><i><b>Line Drawing:</b></i> Upon obtaining all projected positions of all vertices of an object, 
+            lines are drawn using edges data of the object. </dt>
+        <dd>- On canvas: Use native canvas stroke function</dd>
+        <dd>- On pixelated grid: A function is implemented that draw a line by starting at a starting point 
+            and gradually move/draw the line by checking the 3 pixels pointing toward the end point, 
+            moving to the one nearest the line using orthogonal projection calculation of each pixel onto the line</dd>
+        <br><dt><i><b>Triangle Drawing:</b></i> A function is implemented that takes in three points on the screen 
+            and draws a triangle of specified color. 
+            The function check for all pixels in a bounding box of the triangle, 
+            drawing a pixel if said pixel is confirmed to be in the triangle (done using half-plane calculation, 
+            this was done before the depth step is considered) </dt>
+        <dd>- <u>Z-buffer Rasterization:</u> To deal with layer priority of objects' triangles, 
+            each drawn pixel is given a z-value to mark how close it is to the camera. 
+            When a pixel is confirmed to be in the triangle, the barycentric coordinate of the pixel to the triangle is calculated, 
+            and the pixel's z-value is calculated using said barycentric coordinate and the triangle's vertices' camera-relative z coordinate. 
+            The pixel coloring only happens if the new z-value is lower (closer to camera) than the old value. 
+            Pixels are defaulted to Infinite z before being colored.</dd>
+        <br><div class="tri-image">
+            <img src="images/clean_render.png">
+            <img src="images/pixel_render.png">
+            <img src="images/triangle_render.png">
+        </div>
+        <p class="image-desc">Clean line - Pixelated line - Triangle</p>
+        <br><dt><i><b>Animation:</b></i> Movement created inside the canvas was done with repeated redrawing of canvas on position update.</dt>
+    </dl>
+    <h2>Future Work</h2>
+    <p><b><i>Camera & Object rotation:</i></b> The project currently lacks rotation on both camera and object, making movement and viewing restricted.</p>
+    <p><b><i>Object interaction:</i></b> Players currently cannot interact with any object with relative to their position/vision (only button event), which is boring.</p>
+    <p><b><i>Object movement & rendering optimization:</i></b> The pixelated render and triangle render both have a lot of obvious optimizable parts that are 
+        slowing down the overall game significantly (in movement and animation).</p>
+
+    <h2><a href="P1_Video.mp4">Demo Video</a></h2>
+    <h2><a href="https://github.com/JackTVN/jacktvn.github.io/tree/main/docs/computer_graphic/P1">Source Code</a></h2>
+    <h2><a href="P11_Chi-Thanh-Tran.html">Demo</a></h2>
+    
+</body>
+</html>
