@@ -27,6 +27,27 @@
       font-size: 14px;
       line-height: 1.4;
     }
+
+    #buttons {
+      position: fixed;
+      top: 12px;
+      right: 12px;
+      display: flex;
+      flex-direction: column;
+      row-gap: 6px;
+    }
+
+    #button {
+      padding: 12px 14px;
+      background: rgba(0, 0, 0, 0.6);
+      border-radius: 8px;
+      border: 1px solid white;
+      color: white;
+      text-decoration: none;
+      font-size: 14px;
+      line-height: 1.4;
+      text-align: center;
+    }
   </style>
 </head>
 <body>
@@ -35,15 +56,49 @@
   <div id="info">
     <b>Projection</b><br>
   </div>
+  <div id="buttons">
+    <a id="button" onclick="toSite1()"> Clean </a>
+    <a id="button" onclick="toSite2()"> Pixelated </a>
+    <a id="button" onclick="toSite3()"> Triangles </a>
+  </div>
 
 <script>
 
-  // Work by Chi Thanh Tran
-  // Fully done alone, with support from given slides from the course
+  // For seamless transition
+  function toSite1() {
+    let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    query += "&s=" + (isSun ? 1 : 0)
+    window.location.href = "P11_Chi-Thanh-Tran.html" + query
+  }
+
+  function toSite2() {
+    let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    query += "&s=" + (isSun ? 1 : 0)
+    window.location.href = "P1G_Chi-Thanh-Tran.html" + query
+  }
+
+  function toSite3() {
+    let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    query += "&s=" + (isSun ? 1 : 0)
+    window.location.href = "P1T_Chi-Thanh-Tran.html" + query
+  }
+
 
   //we add shapes (like lines) to this canvas
   const canvas = document.getElementById("canvas");
   const ctx = canvas.getContext("2d");
+
+  const params = new URLSearchParams(window.location.search);
+  const camX = Number(params.get("x")) || 0;
+  const camY = Number(params.get("y")) || 0.5;
+  const camZ = Number(params.get("z")) || -12.01;
+
+  let isSun = true
+  if (params.has("s") && params.get("s") == "0") {
+    isSun = false
+  }
+
+  let camera = {x: camX, y: camY, z: camZ};
 
   // Sync canvas size with the 2nd part of project for more seamless transition
   const rows = 200;
@@ -194,9 +249,9 @@
   const triangle_mountain = {
     vertices: [
       { x: 0, y: 1, z: 0 },
-      { x: -0.6, y: -1, z: 1 },
-      { x: 0.87, y: -1, z: -0.5 },
-      { x: -0.87, y: -1, z: -0.5 },
+      { x: -0.4, y: -1, z: -1 },
+      { x: 0.87, y: -1, z: 0.7 },
+      { x: -0.97, y: -1, z: 0.3 },
     ],
 
     edges: [
@@ -211,14 +266,233 @@
     color: "#336633"
   }
   
+  const small_rock = {
+    vertices: [
+      // Top
+      { x:  0.05, y:  1.00, z:  0.00 }, // 0
+
+      // Upper ring
+      { x: -0.35, y:  0.37, z:  0.30 }, // 1
+      { x:  0.30, y:  0.47, z:  0.35 }, // 2
+      { x:  0.40, y:  0.26, z: -0.25 }, // 3
+      { x: -0.30, y:  0.26, z: -0.35 }, // 4
+
+      // Lower ring / base
+      { x: -0.65, y: -0.89, z:  0.40 }, // 5
+      { x:  0.45, y: -1.00, z:  0.45 }, // 6
+      { x:  0.60, y: -0.89, z: -0.35 }, // 7
+      { x: -0.50, y: -1.00, z: -0.45 }, // 8
+    ],
+
+    edges: [
+      // Top to upper ring
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+
+      // Upper ring
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 1],
+
+      // Upper to lower ring
+      [1, 5],
+      [1, 8],
+      [2, 5],
+      [2, 6],
+      [3, 6],
+      [3, 7],
+      [4, 7],
+      [4, 8],
+
+      // Lower ring
+      [5, 6],
+      [6, 7],
+      [7, 8],
+      [8, 5],
+    ],
+
+    color: "#666666",
+  }
+
+  const small_sphere = {
+    vertices: [
+      // Top
+      { x:  0.00, y:  1.00, z:  0.00 }, // 0
+
+      // Upper ring
+      { x:  0.00, y:  0.55, z:  0.55 }, // 1
+      { x:  0.52, y:  0.55, z:  0.20 }, // 2
+      { x:  0.32, y:  0.55, z: -0.45 }, // 3
+      { x: -0.32, y:  0.55, z: -0.45 }, // 4
+      { x: -0.52, y:  0.55, z:  0.20 }, // 5
+
+      // Middle ring
+      { x:  0.00, y:  0.00, z:  0.75 }, // 6
+      { x:  0.71, y:  0.00, z:  0.25 }, // 7
+      { x:  0.44, y:  0.00, z: -0.60 }, // 8
+      { x: -0.44, y:  0.00, z: -0.60 }, // 9
+      { x: -0.71, y:  0.00, z:  0.25 }, // 10
+
+      // Lower ring
+      { x:  0.00, y: -0.55, z:  0.55 }, // 11
+      { x:  0.52, y: -0.55, z:  0.20 }, // 12
+      { x:  0.32, y: -0.55, z: -0.45 }, // 13
+      { x: -0.32, y: -0.55, z: -0.45 }, // 14
+      { x: -0.52, y: -0.55, z:  0.20 }, // 15
+
+      // Bottom
+      { x:  0.00, y: -1.00, z:  0.00 }, // 16
+    ],
+
+    edges: [
+      // Top
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [0, 5],
+
+      // Upper ring
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 1],
+
+      // Upper -> middle
+      [1, 6],
+      [2, 7],
+      [3, 8],
+      [4, 9],
+      [5, 10],
+
+      // Middle ring
+      [6, 7],
+      [7, 8],
+      [8, 9],
+      [9, 10],
+      [10, 6],
+
+      // Middle -> lower
+      [6, 11],
+      [7, 12],
+      [8, 13],
+      [9, 14],
+      [10, 15],
+
+      // Lower ring
+      [11, 12],
+      [12, 13],
+      [13, 14],
+      [14, 15],
+      [15, 11],
+
+      // Bottom
+      [11, 16],
+      [12, 16],
+      [13, 16],
+      [14, 16],
+      [15, 16],
+    ],
+
+    triangles: [
+      // Top
+      [0, 1, 2],
+      [0, 2, 3],
+      [0, 3, 4],
+      [0, 4, 5],
+      [0, 5, 1],
+
+      // Upper section
+      [1, 6, 7],
+      [1, 7, 2],
+
+      [2, 7, 8],
+      [2, 8, 3],
+
+      [3, 8, 9],
+      [3, 9, 4],
+
+      [4, 9, 10],
+      [4, 10, 5],
+
+      [5, 10, 6],
+      [5, 6, 1],
+
+      // Lower section
+      [6, 11, 12],
+      [6, 12, 7],
+
+      [7, 12, 13],
+      [7, 13, 8],
+
+      [8, 13, 14],
+      [8, 14, 9],
+
+      [9, 14, 15],
+      [9, 15, 10],
+
+      [10, 15, 11],
+      [10, 11, 6],
+
+      // Bottom
+      [11, 12, 16],
+      [12, 13, 16],
+      [13, 14, 16],
+      [14, 15, 16],
+      [15, 11, 16],
+    ],
+
+    color: "#E8D58A",
+
+    color_triangle: [
+      "#E8D58A",
+      "#D9C477",
+      "#C9B566",
+      "#E0CA7D",
+      "#BFA95D",
+
+      "#EAD98F",
+      "#D6C16E",
+      "#C3AB5E",
+      "#E2CE7F",
+      "#B79E52",
+
+      "#D8C06C",
+      "#C5AA57",
+      "#B3954B",
+      "#CDB45F",
+      "#A98C45",
+
+      "#DCC572",
+      "#C3A653",
+      "#B19449",
+      "#C9AE5A",
+      "#A08440",
+
+      "#B89A4A",
+      "#9E8239",
+      "#AA8B42",
+      "#907435",
+      "#9A7D3A",
+
+      "#856B31",
+      "#79602B",
+      "#6E5728",
+      "#795F2D",
+      "#644F25",
+    ]
+}
+
   // Road is basically cube but darker, and then we scaled it down to a slab when drawing
   let road = structuredClone(cube);
   road.color = "#222222";
 
-  let camera = {x: 0, y: 0.5, z: -12.01};
-
   // Global draw function for each object, in case we want to draw multiple
-  function drawObject(obj, global_position, scale = [1, 1, 1]) {
+  function drawObject(obj, global_position, scale = [1, 1, 1], color_overwrite = "-1") {
     let projectedVertices = [];
 
     let scaledObj = structuredClone(obj);
@@ -312,13 +586,6 @@
 
     }
 
-    // Choose color
-    if (!scaledObj.color) {
-      ctx.strokeStyle = "#FFFFFF"; // Default color
-    } else {
-      ctx.strokeStyle = scaledObj.color;
-    }
-
     //loop through the edges
     //  find the newly computed projected vertices - 2 per edge
     //  draw the line
@@ -344,7 +611,8 @@
         continue;
       }
 
-      drawLine(u1, v1, u2, v2);
+      if (color_overwrite != "-1") drawLine(u1, v1, u2, v2, color_overwrite);
+      else drawLine(u1, v1, u2, v2, scaledObj.color || "#FFFFFF");
     }
   }
 
@@ -429,50 +697,126 @@
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
     // Horizon
-    ctx.strokeStyle = "#444444";
-    drawLine(0, canvas.height / 2, canvas.width, canvas.height / 2);
+    drawLine(0, canvas.height / 2, canvas.width, canvas.height / 2, "#444444");
 
-    // Draw objects from here
-    //drawObject(cube, {x: 0, y: 0, z: 0});
-    drawObject(road, {x: 0, y: -0.005, z: 0}, [1, 0.01, 200]);
+    drawObject(road, {x: 0, y: -0.005, z: 0}, [1, 0.01, 2000]);
 
-    // Mountain
-    drawObject(square_mountain, {x: -20, y: 5, z: 10}, [5, 5, 5]);
-    drawObject(square_mountain, {x: 10, y: 2, z: 20}, [2, 2, 2]);
-    drawObject(square_mountain, {x: -12, y: 3, z: 30}, [5, 3, 5]);
-    drawObject(triangle_mountain, {x: 6, y: 5, z: 40}, [2, 5, 2]);
-    drawObject(triangle_mountain, {x: -8, y: 4, z: 50}, [5, 4, 2]);
-    drawObject(square_mountain, {x: 8, y: 3, z: 60}, [1, 3, 5]);
-    drawObject(triangle_mountain, {x: -6, y: 5, z: 70}, [3, 5, 3]);
-    drawObject(square_mountain, {x: 4, y: 2, z: 80}, [1, 2, 2]);
+    // Mountain 
+    drawObject(square_mountain, {x: -20, y: 5, z: 10}, [5, 5, 5], "#486c1f");
+    drawObject(square_mountain, {x: 10, y: 2, z: 20}, [2, 2, 2], "#418c56");
+    drawObject(square_mountain, {x: -12, y: 3, z: 30}, [5, 3, 5], "#376c23");
+    drawObject(triangle_mountain, {x: 6, y: 5, z: 40}, [2, 5, 2], "#305c1f");
+    drawObject(triangle_mountain, {x: -8, y: 4, z: 50}, [5, 4, 2], "#156e5b");
+    drawObject(square_mountain, {x: 8, y: 3, z: 60}, [1, 3, 5], "#49702c");
+    drawObject(triangle_mountain, {x: -6, y: 5, z: 70}, [3, 5, 3], "#486c1f");
+    drawObject(square_mountain, {x: 4, y: 2, z: 80}, [1, 2, 2], "#729841");
+
+    // Rocc
+    drawObject(small_rock, {x: -3, y: 0.5, z: -2}, [1,0.5,0.5]);
+    drawObject(small_rock, {x: 2, y: 0.25, z: -4}, [0.5,0.25,0.5]);
+    
+    // THE SUN
+    if (isSun) {
+      small_sphere.color = "#E8D58A"
+      small_sphere.color_triangle = [
+        "#E8D58A",
+        "#D9C477",
+        "#C9B566",
+        "#E0CA7D",
+        "#BFA95D",
+
+        "#EAD98F",
+        "#D6C16E",
+        "#C3AB5E",
+        "#E2CE7F",
+        "#B79E52",
+
+        "#D8C06C",
+        "#C5AA57",
+        "#B3954B",
+        "#CDB45F",
+        "#A98C45",
+
+        "#DCC572",
+        "#C3A653",
+        "#B19449",
+        "#C9AE5A",
+        "#A08440",
+
+        "#B89A4A",
+        "#9E8239",
+        "#AA8B42",
+        "#907435",
+        "#9A7D3A",
+
+        "#856B31",
+        "#79602B",
+        "#6E5728",
+        "#795F2D",
+        "#644F25",
+      ]
+      drawObject(small_sphere, {x: 400, y: 800, z: 4000}, [180,180,180]);
+    } else {
+      small_sphere.color = "#AEB4C0"
+      small_sphere.color_triangle = [
+        "#AEB4C0",
+        "#9EA5B2",
+        "#8F97A5",
+        "#A5ABB7",
+        "#858D9B",
+
+        "#B5BAC5",
+        "#A1A8B5",
+        "#9299A7",
+        "#A9AFBB",
+        "#858C9A",
+
+        "#999FAC",
+        "#898F9D",
+        "#7B8290",
+        "#9198A6",
+        "#727987",
+
+        "#9298A6",
+        "#7F8694",
+        "#727987",
+        "#858C9A",
+        "#6B7280",
+
+        "#777E8C",
+        "#656C7A",
+        "#6E7583",
+        "#5D6472",
+        "#666D7A",
+
+        "#575E6B",
+        "#4F5663",
+        "#484F5C",
+        "#535A67",
+        "#424955",
+      ]
+      drawObject(small_sphere, {x: -500, y: 700, z: 4000}, [100,100,100]);
+    }
 
     // Road line
-    drawObject(cube, {x: 0, y: -0.0025, z: 0}, [0.1, 0.005, 2]);
-    drawObject(cube, {x: 0, y: -0.0025, z: 10}, [0.1, 0.005, 2]);
-    drawObject(cube, {x: 0, y: -0.0025, z: 20}, [0.1, 0.005, 2]);
-    drawObject(cube, {x: 0, y: -0.0025, z: 30}, [0.1, 0.005, 2]);
-    drawObject(cube, {x: 0, y: -0.0025, z: 40}, [0.1, 0.005, 2]);
-    drawObject(cube, {x: 0, y: -0.0025, z: 50}, [0.1, 0.005, 2]);
-    drawObject(cube, {x: 0, y: -0.0025, z: 60}, [0.1, 0.005, 2]);
-    drawObject(cube, {x: 0, y: -0.0025, z: 70}, [0.1, 0.005, 2]);
-    drawObject(cube, {x: 0, y: -0.0025, z: 80}, [0.1, 0.005, 2]);
+    for (let i = 0; i < 30; i++) {
+      drawObject(cube, {x: 0, y: -0.0025, z: i * 10}, [0.1, 0.005, 2]);
+    }
 
-    drawObject(light_post_left, {x: -1, y: 0.5, z: 4}, [0.5, 0.5, 0.5]);
-    drawObject(light_post_right, {x: 1, y: 0.5, z: 4}, [0.5, 0.5, 0.5]);
+    for (let i = 0; i < 10; i++) {
+      drawObject(light_post_left, {x: -1, y: 0.5, z: -10 + i * 30}, [0.5, 0.5, 0.5]);
+      drawObject(light_post_right, {x: 1, y: 0.5, z: -10 + i * 30}, [0.5, 0.5, 0.5]);
 
-    drawObject(light_post_left, {x: -1, y: 1, z: 0});
-    drawObject(light_post_right, {x: 1, y: 1, z: 0});
-    
-    drawObject(light_post_left, {x: -1, y: 0.5, z: -4}, [0.5, 0.5, 0.5]);
-    drawObject(light_post_right, {x: 1, y: 0.5, z: -4}, [0.5, 0.5, 0.5]);
-
-    drawObject(light_post_left, {x: -1, y: 1, z: -8});
-    drawObject(light_post_right, {x: 1, y: 1, z: -8});
+      drawObject(light_post_left, {x: -1, y: 1, z: -25 + i * 30});
+      drawObject(light_post_right, {x: 1, y: 1, z: -25 + i * 30});
+    }
   }
 
   //This uses a built in 'drawLine' function, provided by the javascript canvas
-  function drawLine(x1, y1, x2, y2){
+  function drawLine(x1, y1, x2, y2, color = "#FFFFFF"){
     ctx.lineWidth = 2;
+
+    ctx.strokeStyle = color;
 
     //this is how you draw a line on the canvas 
     ctx.beginPath();
@@ -493,16 +837,22 @@
     keysPressed[e.code] = false;
   });
 
-  // do nothing for now....
+  // For on down event (one time)
   document.addEventListener("keydown", (event) => {
     event.preventDefault();
     if (event.key === "KeyR" || event.key === "r") {
       console.log(`Initial press: ${event.key}`)
       //****TO DO: reset camera
       camera.x = 0;
-      camera.y = 0;
-      camera.z = -10;
+      camera.y = 0.5;
+      camera.z = -12.01;
       console.log("Reset");
+      draw();
+    }
+
+    if (event.key === "KeyQ" || event.key === "q") {
+      // Change the sun to the moon
+      isSun = !isSun
       draw();
     }
   });
