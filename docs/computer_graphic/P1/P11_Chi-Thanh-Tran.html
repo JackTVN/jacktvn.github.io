@@ -60,6 +60,13 @@
     <a id="button" onclick="toSite1()"> Clean </a>
     <a id="button" onclick="toSite2()"> Pixelated </a>
     <a id="button" onclick="toSite3()"> Triangles </a>
+    <p>
+      WASD to move<br>
+      R to reset camera<br>
+      Q to change the celestial!<br>
+      Use above button to <br>
+      change render
+    </p>
   </div>
 
 <script>
@@ -67,18 +74,22 @@
   // For seamless transition
   function toSite1() {
     let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    query += "&s=" + (isSun ? 1 : 0)
     window.location.href = "P11_Chi-Thanh-Tran.html" + query
   }
 
   function toSite2() {
     let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    query += "&s=" + (isSun ? 1 : 0)
     window.location.href = "P1G_Chi-Thanh-Tran.html" + query
   }
 
   function toSite3() {
     let query = "?x=" + camera.x + "&y=" + camera.y + "&z=" + camera.z
+    query += "&s=" + (isSun ? 1 : 0)
     window.location.href = "P1T_Chi-Thanh-Tran.html" + query
   }
+
 
   //we add shapes (like lines) to this canvas
   const canvas = document.getElementById("canvas");
@@ -89,8 +100,10 @@
   const camY = Number(params.get("y")) || 0.5;
   const camZ = Number(params.get("z")) || -12.01;
 
-  console.log(params);
-  
+  let isSun = true
+  if (params.has("s") && params.get("s") == "0") {
+    isSun = false
+  }
 
   let camera = {x: camX, y: camY, z: camZ};
 
@@ -311,6 +324,175 @@
     color: "#666666",
   }
 
+  const small_sphere = {
+    vertices: [
+      // Top
+      { x:  0.00, y:  1.00, z:  0.00 }, // 0
+
+      // Upper ring
+      { x:  0.00, y:  0.55, z:  0.55 }, // 1
+      { x:  0.52, y:  0.55, z:  0.20 }, // 2
+      { x:  0.32, y:  0.55, z: -0.45 }, // 3
+      { x: -0.32, y:  0.55, z: -0.45 }, // 4
+      { x: -0.52, y:  0.55, z:  0.20 }, // 5
+
+      // Middle ring
+      { x:  0.00, y:  0.00, z:  0.75 }, // 6
+      { x:  0.71, y:  0.00, z:  0.25 }, // 7
+      { x:  0.44, y:  0.00, z: -0.60 }, // 8
+      { x: -0.44, y:  0.00, z: -0.60 }, // 9
+      { x: -0.71, y:  0.00, z:  0.25 }, // 10
+
+      // Lower ring
+      { x:  0.00, y: -0.55, z:  0.55 }, // 11
+      { x:  0.52, y: -0.55, z:  0.20 }, // 12
+      { x:  0.32, y: -0.55, z: -0.45 }, // 13
+      { x: -0.32, y: -0.55, z: -0.45 }, // 14
+      { x: -0.52, y: -0.55, z:  0.20 }, // 15
+
+      // Bottom
+      { x:  0.00, y: -1.00, z:  0.00 }, // 16
+    ],
+
+    edges: [
+      // Top
+      [0, 1],
+      [0, 2],
+      [0, 3],
+      [0, 4],
+      [0, 5],
+
+      // Upper ring
+      [1, 2],
+      [2, 3],
+      [3, 4],
+      [4, 5],
+      [5, 1],
+
+      // Upper -> middle
+      [1, 6],
+      [2, 7],
+      [3, 8],
+      [4, 9],
+      [5, 10],
+
+      // Middle ring
+      [6, 7],
+      [7, 8],
+      [8, 9],
+      [9, 10],
+      [10, 6],
+
+      // Middle -> lower
+      [6, 11],
+      [7, 12],
+      [8, 13],
+      [9, 14],
+      [10, 15],
+
+      // Lower ring
+      [11, 12],
+      [12, 13],
+      [13, 14],
+      [14, 15],
+      [15, 11],
+
+      // Bottom
+      [11, 16],
+      [12, 16],
+      [13, 16],
+      [14, 16],
+      [15, 16],
+    ],
+
+    triangles: [
+      // Top
+      [0, 1, 2],
+      [0, 2, 3],
+      [0, 3, 4],
+      [0, 4, 5],
+      [0, 5, 1],
+
+      // Upper section
+      [1, 6, 7],
+      [1, 7, 2],
+
+      [2, 7, 8],
+      [2, 8, 3],
+
+      [3, 8, 9],
+      [3, 9, 4],
+
+      [4, 9, 10],
+      [4, 10, 5],
+
+      [5, 10, 6],
+      [5, 6, 1],
+
+      // Lower section
+      [6, 11, 12],
+      [6, 12, 7],
+
+      [7, 12, 13],
+      [7, 13, 8],
+
+      [8, 13, 14],
+      [8, 14, 9],
+
+      [9, 14, 15],
+      [9, 15, 10],
+
+      [10, 15, 11],
+      [10, 11, 6],
+
+      // Bottom
+      [11, 12, 16],
+      [12, 13, 16],
+      [13, 14, 16],
+      [14, 15, 16],
+      [15, 11, 16],
+    ],
+
+    color: "#E8D58A",
+
+    color_triangle: [
+      "#E8D58A",
+      "#D9C477",
+      "#C9B566",
+      "#E0CA7D",
+      "#BFA95D",
+
+      "#EAD98F",
+      "#D6C16E",
+      "#C3AB5E",
+      "#E2CE7F",
+      "#B79E52",
+
+      "#D8C06C",
+      "#C5AA57",
+      "#B3954B",
+      "#CDB45F",
+      "#A98C45",
+
+      "#DCC572",
+      "#C3A653",
+      "#B19449",
+      "#C9AE5A",
+      "#A08440",
+
+      "#B89A4A",
+      "#9E8239",
+      "#AA8B42",
+      "#907435",
+      "#9A7D3A",
+
+      "#856B31",
+      "#79602B",
+      "#6E5728",
+      "#795F2D",
+      "#644F25",
+    ]
+}
 
   // Road is basically cube but darker, and then we scaled it down to a slab when drawing
   let road = structuredClone(cube);
@@ -370,8 +552,8 @@
                 edge[1] = newIndex;
               }
 
-              console.log(intersection);
-              console.log(scaledObj.edges);
+              //console.log(intersection);
+              //console.log(scaledObj.edges);
             } else {
               // Both vertices are behind camera, remove the edge
               scaledObj.edges = scaledObj.edges.filter(e => e !== edge);
@@ -415,7 +597,7 @@
     //  find the newly computed projected vertices - 2 per edge
     //  draw the line
     for(let e = 0; e < scaledObj.edges.length; e++){
-      console.log("Edge: " + scaledObj.edges[e]);
+      //console.log("Edge: " + scaledObj.edges[e]);
       //first vertex
       let e1 = scaledObj.edges[e][0]; //idx
       let u1 = projectedVertices[ e1 ].u; 
@@ -426,9 +608,9 @@
       let u2 = projectedVertices[ e2 ].u;
       let v2 = canvas.height - projectedVertices[ e2 ].v;
 
-      console.log("Camera Position: " + camera.x + ", " + camera.y + ", " + camera.z);
-      console.log("Original Vertices: " + scaledObj.vertices[e1].x + ", " + scaledObj.vertices[e1].y + ", " + scaledObj.vertices[e1].z + " and " + scaledObj.vertices[e2].x + ", " + scaledObj.vertices[e2].y + ", " + scaledObj.vertices[e2].z);
-      console.log("Projected Vertices: " + u1 + ", " + v1 + " and " + u2 + ", " + v2);
+      //console.log("Camera Position: " + camera.x + ", " + camera.y + ", " + camera.z);
+      //console.log("Original Vertices: " + scaledObj.vertices[e1].x + ", " + scaledObj.vertices[e1].y + ", " + scaledObj.vertices[e1].z + " and " + scaledObj.vertices[e2].x + ", " + scaledObj.vertices[e2].y + ", " + scaledObj.vertices[e2].z);
+      //console.log("Projected Vertices: " + u1 + ", " + v1 + " and " + u2 + ", " + v2);
 
       // Just in case
       if (Math.abs(u1) === Infinity || Math.abs(u2) === Infinity || Math.abs(v1) === Infinity || Math.abs(v2) === Infinity) {
@@ -515,6 +697,11 @@
   }
   */
 
+  let SunY = isSun ? 800 : 5000
+  let MoonY = isSun ? 5000 : 700
+  let curSunY = SunY
+  let curMoonY = MoonY
+
   function draw() {
     // clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -539,6 +726,90 @@
     // Rocc
     drawObject(small_rock, {x: -3, y: 0.5, z: -2}, [1,0.5,0.5]);
     drawObject(small_rock, {x: 2, y: 0.25, z: -4}, [0.5,0.25,0.5]);
+    
+    // THE SUN
+    if (isSun || curSunY != SunY) {
+      small_sphere.color = "#E8D58A"
+      small_sphere.color_triangle = [
+        "#E8D58A",
+        "#D9C477",
+        "#C9B566",
+        "#E0CA7D",
+        "#BFA95D",
+
+        "#EAD98F",
+        "#D6C16E",
+        "#C3AB5E",
+        "#E2CE7F",
+        "#B79E52",
+
+        "#D8C06C",
+        "#C5AA57",
+        "#B3954B",
+        "#CDB45F",
+        "#A98C45",
+
+        "#DCC572",
+        "#C3A653",
+        "#B19449",
+        "#C9AE5A",
+        "#A08440",
+
+        "#B89A4A",
+        "#9E8239",
+        "#AA8B42",
+        "#907435",
+        "#9A7D3A",
+
+        "#856B31",
+        "#79602B",
+        "#6E5728",
+        "#795F2D",
+        "#644F25",
+      ]
+      drawObject(small_sphere, {x: 400, y: curSunY, z: 4000}, [180,180,180]);
+    } 
+    if ((!isSun) || curMoonY != MoonY) {
+      small_sphere.color = "#AEB4C0"
+      small_sphere.color_triangle = [
+        "#AEB4C0",
+        "#9EA5B2",
+        "#8F97A5",
+        "#A5ABB7",
+        "#858D9B",
+
+        "#B5BAC5",
+        "#A1A8B5",
+        "#9299A7",
+        "#A9AFBB",
+        "#858C9A",
+
+        "#999FAC",
+        "#898F9D",
+        "#7B8290",
+        "#9198A6",
+        "#727987",
+
+        "#9298A6",
+        "#7F8694",
+        "#727987",
+        "#858C9A",
+        "#6B7280",
+
+        "#777E8C",
+        "#656C7A",
+        "#6E7583",
+        "#5D6472",
+        "#666D7A",
+
+        "#575E6B",
+        "#4F5663",
+        "#484F5C",
+        "#535A67",
+        "#424955",
+      ]
+      drawObject(small_sphere, {x: -500, y: curMoonY, z: 4000}, [100,100,100]);
+    }
 
     // Road line
     for (let i = 0; i < 30; i++) {
@@ -579,17 +850,24 @@
     keysPressed[e.code] = false;
   });
 
-  // do nothing for now....
+  // For on down event (one time)
   document.addEventListener("keydown", (event) => {
     event.preventDefault();
     if (event.key === "KeyR" || event.key === "r") {
       console.log(`Initial press: ${event.key}`)
       //****TO DO: reset camera
       camera.x = 0;
-      camera.y = 0;
-      camera.z = -10;
+      camera.y = 0.5;
+      camera.z = -12.01;
       console.log("Reset");
       draw();
+    }
+
+    if (event.key === "KeyQ" || event.key === "q") {
+      // Change the sun to the moon
+      isSun = !isSun
+      updateCelestial()
+      //draw();
     }
   });
 
@@ -600,6 +878,18 @@
   }
 
   let speedScale = 1;
+
+  function updateCelestial() {
+    SunY = isSun ? 800 : 5000
+    MoonY = isSun ? 5000 : 700
+  }
+
+  function lerp(x, y, t, tolerance = 1) {
+    if (Math.abs(y - x) <= tolerance)
+        return y;
+
+    return x + (y - x) * t;
+  }
 
   function update() {
     if (keysPressed['ShiftLeft']) {
@@ -627,12 +917,22 @@
       camera.x += 0.1;
       draw();
     }
+  
+    if (curSunY != SunY) {
+      curSunY = lerp(curSunY, SunY, 0.3)
+      draw();
+    }
+
+    if (curMoonY != MoonY) {
+      curMoonY = lerp(curMoonY, MoonY, 0.3)
+      draw();
+    }
   }
 
 
   //window.addEventListener("resize", resizeCanvas);
   //resizeCanvas();
-
+  updateCelestial();
   draw();
   
   setInterval(update, 30);
