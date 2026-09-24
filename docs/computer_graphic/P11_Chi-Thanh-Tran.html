@@ -60,6 +60,13 @@
     <a id="button" onclick="toSite1()"> Clean </a>
     <a id="button" onclick="toSite2()"> Pixelated </a>
     <a id="button" onclick="toSite3()"> Triangles </a>
+    <p>
+      WASD to move<br>
+      R to reset camera<br>
+      Q to change the celestial!<br>
+      Use above button to <br>
+      change render
+    </p>
   </div>
 
 <script>
@@ -545,8 +552,8 @@
                 edge[1] = newIndex;
               }
 
-              console.log(intersection);
-              console.log(scaledObj.edges);
+              //console.log(intersection);
+              //console.log(scaledObj.edges);
             } else {
               // Both vertices are behind camera, remove the edge
               scaledObj.edges = scaledObj.edges.filter(e => e !== edge);
@@ -590,7 +597,7 @@
     //  find the newly computed projected vertices - 2 per edge
     //  draw the line
     for(let e = 0; e < scaledObj.edges.length; e++){
-      console.log("Edge: " + scaledObj.edges[e]);
+      //console.log("Edge: " + scaledObj.edges[e]);
       //first vertex
       let e1 = scaledObj.edges[e][0]; //idx
       let u1 = projectedVertices[ e1 ].u; 
@@ -601,9 +608,9 @@
       let u2 = projectedVertices[ e2 ].u;
       let v2 = canvas.height - projectedVertices[ e2 ].v;
 
-      console.log("Camera Position: " + camera.x + ", " + camera.y + ", " + camera.z);
-      console.log("Original Vertices: " + scaledObj.vertices[e1].x + ", " + scaledObj.vertices[e1].y + ", " + scaledObj.vertices[e1].z + " and " + scaledObj.vertices[e2].x + ", " + scaledObj.vertices[e2].y + ", " + scaledObj.vertices[e2].z);
-      console.log("Projected Vertices: " + u1 + ", " + v1 + " and " + u2 + ", " + v2);
+      //console.log("Camera Position: " + camera.x + ", " + camera.y + ", " + camera.z);
+      //console.log("Original Vertices: " + scaledObj.vertices[e1].x + ", " + scaledObj.vertices[e1].y + ", " + scaledObj.vertices[e1].z + " and " + scaledObj.vertices[e2].x + ", " + scaledObj.vertices[e2].y + ", " + scaledObj.vertices[e2].z);
+      //console.log("Projected Vertices: " + u1 + ", " + v1 + " and " + u2 + ", " + v2);
 
       // Just in case
       if (Math.abs(u1) === Infinity || Math.abs(u2) === Infinity || Math.abs(v1) === Infinity || Math.abs(v2) === Infinity) {
@@ -690,6 +697,11 @@
   }
   */
 
+  let SunY = isSun ? 800 : 5000
+  let MoonY = isSun ? 5000 : 700
+  let curSunY = SunY
+  let curMoonY = MoonY
+
   function draw() {
     // clear the canvas
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -716,7 +728,7 @@
     drawObject(small_rock, {x: 2, y: 0.25, z: -4}, [0.5,0.25,0.5]);
     
     // THE SUN
-    if (isSun) {
+    if (isSun || curSunY != SunY) {
       small_sphere.color = "#E8D58A"
       small_sphere.color_triangle = [
         "#E8D58A",
@@ -755,8 +767,9 @@
         "#795F2D",
         "#644F25",
       ]
-      drawObject(small_sphere, {x: 400, y: 800, z: 4000}, [180,180,180]);
-    } else {
+      drawObject(small_sphere, {x: 400, y: curSunY, z: 4000}, [180,180,180]);
+    } 
+    if ((!isSun) || curMoonY != MoonY) {
       small_sphere.color = "#AEB4C0"
       small_sphere.color_triangle = [
         "#AEB4C0",
@@ -795,7 +808,7 @@
         "#535A67",
         "#424955",
       ]
-      drawObject(small_sphere, {x: -500, y: 700, z: 4000}, [100,100,100]);
+      drawObject(small_sphere, {x: -500, y: curMoonY, z: 4000}, [100,100,100]);
     }
 
     // Road line
@@ -853,7 +866,8 @@
     if (event.key === "KeyQ" || event.key === "q") {
       // Change the sun to the moon
       isSun = !isSun
-      draw();
+      updateCelestial()
+      //draw();
     }
   });
 
@@ -864,6 +878,18 @@
   }
 
   let speedScale = 1;
+
+  function updateCelestial() {
+    SunY = isSun ? 800 : 5000
+    MoonY = isSun ? 5000 : 700
+  }
+
+  function lerp(x, y, t, tolerance = 1) {
+    if (Math.abs(y - x) <= tolerance)
+        return y;
+
+    return x + (y - x) * t;
+  }
 
   function update() {
     if (keysPressed['ShiftLeft']) {
@@ -891,12 +917,22 @@
       camera.x += 0.1;
       draw();
     }
+  
+    if (curSunY != SunY) {
+      curSunY = lerp(curSunY, SunY, 0.3)
+      draw();
+    }
+
+    if (curMoonY != MoonY) {
+      curMoonY = lerp(curMoonY, MoonY, 0.3)
+      draw();
+    }
   }
 
 
   //window.addEventListener("resize", resizeCanvas);
   //resizeCanvas();
-
+  updateCelestial();
   draw();
   
   setInterval(update, 30);

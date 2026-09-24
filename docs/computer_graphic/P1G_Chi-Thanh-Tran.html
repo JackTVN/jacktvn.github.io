@@ -63,6 +63,13 @@
     <a id="button" onclick="toSite1()"> Clean </a>
     <a id="button" onclick="toSite2()"> Pixelated </a>
     <a id="button" onclick="toSite3()"> Triangles </a>
+    <p>
+      WASD to move<br>
+      R to reset camera<br>
+      Q to change the celestial!<br>
+      Use above button to <br>
+      change render
+    </p>
   </div>
 
 <script>
@@ -600,6 +607,11 @@
     }
   }
 
+  let SunY = isSun ? 800 : 5000
+  let MoonY = isSun ? 5000 : 700
+  let curSunY = SunY
+  let curMoonY = MoonY
+
   function draw(){
     //here we set up and clear the canvas, every draw frame
     ctx.clearRect(0, 0, canvas.width, canvas.height);
@@ -635,8 +647,7 @@
     drawObject(small_rock, {x: 2, y: 0.25, z: -4}, [0.5,0.25,0.5]);
     
     // THE SUN
-    // THE SUN
-    if (isSun) {
+    if (isSun || curSunY != SunY) {
       small_sphere.color = "#E8D58A"
       small_sphere.color_triangle = [
         "#E8D58A",
@@ -675,8 +686,9 @@
         "#795F2D",
         "#644F25",
       ]
-      drawObject(small_sphere, {x: 400, y: 800, z: 4000}, [180,180,180]);
-    } else {
+      drawObject(small_sphere, {x: 400, y: curSunY, z: 4000}, [180,180,180]);
+    } 
+    if ((!isSun) || curMoonY != MoonY) {
       small_sphere.color = "#AEB4C0"
       small_sphere.color_triangle = [
         "#AEB4C0",
@@ -715,7 +727,7 @@
         "#535A67",
         "#424955",
       ]
-      drawObject(small_sphere, {x: -500, y: 700, z: 4000}, [100,100,100]);
+      drawObject(small_sphere, {x: -500, y: curMoonY, z: 4000}, [100,100,100]);
     }
 
     // Road line
@@ -862,68 +874,95 @@
     draw();
   }
 
-  
   // Dont use alternative event here because lag
-    document.addEventListener("keydown", (event) => {
-      //console.log(`Initial press: ${event.key}`)
-      event.preventDefault();
-       switch (event.key) {
-        case "w":
-          //****TO DO: Change camera z position a go closer
-          camera.z += 1;
-          //console.log("Up arrow pressed");
-          draw();
-          break;
-        case "s":
-          //****TO DO: Change camera z position go further away
-          camera.z -= 1;
-          //console.log("Down arrow pressed");
-          draw();
-          break;
-        case "a":
-          //****TO DO: Change camera x position move left
-          camera.x -= 1;
-          //console.log("Left arrow pressed");
-          draw();
-          break;
-        case "d":
-          //****TO DO: Change camera x position move right
-          camera.x += 1;
-          //console.log("Right arrow pressed");
-          draw();
-          break;
-        case "KeyR":
-          //****TO DO: reset camera
-          camera.x = 0;
-          camera.y = 0.5;
-          camera.z = -12.01;
-          //console.log("Reset");
-          draw();
-          break;
+  document.addEventListener("keydown", (event) => {
+    //console.log(`Initial press: ${event.key}`)
+    event.preventDefault();
+      switch (event.key) {
+      case "w":
+        //****TO DO: Change camera z position a go closer
+        camera.z += 1;
+        //console.log("Up arrow pressed");
+        draw();
+        break;
+      case "s":
+        //****TO DO: Change camera z position go further away
+        camera.z -= 1;
+        //console.log("Down arrow pressed");
+        draw();
+        break;
+      case "a":
+        //****TO DO: Change camera x position move left
+        camera.x -= 1;
+        //console.log("Left arrow pressed");
+        draw();
+        break;
+      case "d":
+        //****TO DO: Change camera x position move right
+        camera.x += 1;
+        //console.log("Right arrow pressed");
+        draw();
+        break;
+      case "KeyR":
+        //****TO DO: reset camera
+        camera.x = 0;
+        camera.y = 0.5;
+        camera.z = -12.01;
+        //console.log("Reset");
+        draw();
+        break;
 
-        case "r":
-          // KeyR is not working for me for some reason, so I added this one too since it work
-          camera.x = 0;
-          camera.y = 0.5;
-          camera.z = -12.01;
-          //console.log("Reset");
-          draw();
-          break;
+      case "r":
+        // KeyR is not working for me for some reason, so I added this one too since it work
+        camera.x = 0;
+        camera.y = 0.5;
+        camera.z = -12.01;
+        //console.log("Reset");
+        draw();
+        break;
 
-        case "q":
-          isSun = !isSun
-          draw();
-          break;
-          
-        default:
-          return; 
-      
-      }
-    });
+      case "q":
+        isSun = !isSun
+        updateCelestial()
+        break;
+        
+      default:
+        return; 
+    
+    }
+  });
+
+  function updateCelestial() {
+    SunY = isSun ? 800 : 5000
+    MoonY = isSun ? 5000 : 700
+  }
+
+  function lerp(x, y, t, tolerance = 1) {
+    if (Math.abs(y - x) <= tolerance)
+        return y;
+
+    return x + (y - x) * t;
+  }
+
+  function update() {
+    if (curSunY != SunY) {
+      curSunY = lerp(curSunY, SunY, 0.5, 100)
+      draw();
+    }
+
+    if (curMoonY != MoonY) {
+      curMoonY = lerp(curMoonY, MoonY, 0.5, 100)
+      draw();
+    }
+  }
 
   //window.addEventListener("resize", resizeCanvas);
   //resizeCanvas();
-  draw(); // Initial draw
+
+  updateCelestial();
+  draw();
+  
+  setInterval(update, 30);
 
 
 
