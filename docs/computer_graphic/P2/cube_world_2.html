@@ -1,0 +1,72 @@
+<!doctype html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>WebGL Cube Grid</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            height: 100%;
+            background: rgba(36, 153, 255, 0.411);
+            overflow: hidden;
+            font-family: Arial, sans-serif;
+        }
+
+        canvas {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        #main {
+            display: grid;
+            grid-template-columns: 200px 1fr;
+            grid-template-rows: 100vh;
+            text-align: center;
+        }
+
+        #sideboard {
+            background: rgba(10,10,10, 1);
+            color: white;
+            padding: 20px;
+        }
+
+        #button-container {
+            padding: 5px;
+            margin: 5px;
+            text-align: center;
+            color: white;
+            background: rgba(10,10,10, 1);
+            border: white solid 1px;
+        }
+
+        #button-container:hover {
+            background: rgba(50,50,50, 1);
+        }
+        
+        a {
+            color: white;
+            text-decoration: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div id="main">
+        <div id="sideboard">
+            <p id="score">Score: 0</p>
+            <div id="button-container" onclick="location.href='cube_world_1a.html'">1A</div>
+            <div id="button-container" onclick="location.href='cube_world_1b.html'">1B</div>
+            <div id="button-container" onclick="location.href='cube_world_2.html'">2</div>
+            <div id="button-container" onclick="location.href='cube_world_3.html'">3</div>
+
+        </div>
+        <canvas id="c"></canvas>
+    </div>
+
+    <script src="cube_world_2.js"></script>
+</body>
+
+</html>
