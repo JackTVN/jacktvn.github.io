@@ -110,7 +110,6 @@ void main() {
     vec3 worldPosition =
         aPosition * aInstanceScale + aInstancePosition;
 
-    // Correctly account for non-uniform scaling.
     vNormal = normalize(aNormal / aInstanceScale);
     vColor = aInstanceColor;
 
@@ -196,10 +195,6 @@ const buffer = gl.createBuffer();
 gl.bindBuffer(gl.ARRAY_BUFFER, buffer);
 gl.bufferData(gl.ARRAY_BUFFER, cubeVertices, gl.STATIC_DRAW);
 
-// Tell the GPU how to read the buffer: which numbers are the position
-// and which are the normal.
-//   stride = bytes from one vertex to the next = 6 floats × 4 bytes = 24
-//   offset = where in each vertex this attribute starts
 const BYTES_PER_FLOAT = 4;
 const stride = 6 * BYTES_PER_FLOAT;
 
@@ -219,10 +214,8 @@ gl.vertexAttribPointer(
 );
 
 // Look up where each uniform lives so we can set it later.
-//const uModel = gl.getUniformLocation(program, "uModel");
 const uView = gl.getUniformLocation(program, "uView");
 const uProjection = gl.getUniformLocation(program, "uProjection");
-//const uColor = gl.getUniformLocation(program, "uColor");
 
 // ---------------------------------------------------------------------
 // 3. THE SCENE: a plain JavaScript list of cubes
@@ -230,7 +223,7 @@ const uProjection = gl.getUniformLocation(program, "uProjection");
 //    The cubes are laid out in a GRID_SIZE × GRID_SIZE grid on the
 //    ground plane (y = 0), centered on the origin.
 // ---------------------------------------------------------------------
-const GRID_SIZE = 50; // 10 × 10 = 100 cubes
+const GRID_SIZE = 50;
 const SPACING = 1.2; // distance between cube centers
 
 const cubes = [];
@@ -469,9 +462,6 @@ let noiseOffsetY = 0;
 const NOISE_SPEED_X = 20;
 const NOISE_SPEED_Y = 0;
 
-// CAMERA ORBIT
-// The camera circles the origin at a fixed distance and height.
-// The angle is in radians; the speed is radians PER SECOND.
 let CAMERA_HEIGHT = 46;
 let CAMERA_RADIUS = 14 * Math.SQRT2; // same start spot as the old [64, 104, 64]
 const CAMERA_ORBIT_SPEED = 0.2; // ~31 seconds per full lap
@@ -556,6 +546,7 @@ let colorSheet = null;
 loadGrassMaps();
 
 // HELPER FUNCTION
+// https://blog.demofox.org/2014/08/28/one-dimensional-bezier-curves/
 function quadraticBezier(p0, p1, p2, t) {
   const u = 1.0 - t;
 
@@ -798,8 +789,7 @@ function explosion(cube) {
 
   for (const floor of cubes) {
     if (
-      (cube.position[2] - floor.z) ** 2 +
-        (cube.position[0] - floor.x) ** 2 <
+      (cube.position[2] - floor.z) ** 2 + (cube.position[0] - floor.x) ** 2 <
       25
     ) {
       floor.shock = 2;
@@ -821,11 +811,9 @@ function draw() {
   }
   gl.viewport(0, 0, canvas.width, canvas.height);
 
-  // Clear the screen to black (red, green, blue, alpha).
+  // Clear the screen to certain color.
   gl.clearColor(11 / 255, 1 / 255, 45 / 255, 1);
 
-  // Depth testing makes near cubes hide far cubes, no matter which
-  // order we draw them in. Each frame we clear the depth info too.
   gl.enable(gl.DEPTH_TEST);
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
@@ -837,7 +825,6 @@ function draw() {
     perspective(Math.PI / 2, aspect, 0.1, 1000),
   );
 
-  // Orbit the camera around the Y axis using the angle that update() advances.
   const eye = [
     Math.sin(cameraAngle) * CAMERA_RADIUS,
     CAMERA_HEIGHT,
@@ -845,43 +832,6 @@ function draw() {
   ];
   gl.uniformMatrix4fv(uView, false, lookAt(eye, [0, 0, 0], [0, 1, 0]));
 
-  /*
-  // Draw every cube: same triangles each time, different uniforms.
-  for (const cube of cubes) {
-    // First stretch the cube to its height, then move it to its spot.
-    // (In multiply(a, b), b happens first, so scaling goes on the right.)
-    const model = multiply(
-      translation(cube.x, 0, cube.z),
-      scaling(1, cube.height, 1),
-    );
-
-    gl.uniformMatrix4fv(uModel, false, model);
-    gl.uniform3fv(uColor, cube.color);
-    gl.drawArrays(gl.TRIANGLES, 0, VERTEX_COUNT);
-  }
-
-  for (const cube of flyingCubes) {
-    const model = multiply(
-      translation(cube.position[0], cube.position[1], cube.position[2]),
-      scaling(cube.scaling[0], cube.scaling[1], cube.scaling[2]),
-    );
-
-    gl.uniformMatrix4fv(uModel, false, model);
-    gl.uniform3fv(uColor, cube.color);
-    gl.drawArrays(gl.TRIANGLES, 0, VERTEX_COUNT);
-  }
-
-  for (const cube of staticCubes) {
-    const model = multiply(
-      translation(cube.position[0], cube.position[1], cube.position[2]),
-      scaling(cube.scaling[0], cube.scaling[1], cube.scaling[2]),
-    );
-
-    gl.uniformMatrix4fv(uModel, false, model);
-    gl.uniform3fv(uColor, cube.color);
-    gl.drawArrays(gl.TRIANGLES, 0, VERTEX_COUNT);
-  }
-*/
   // Prepare instance data
   for (let i = 0; i < cubes.length; i++) {
     const cube = cubes[i];
@@ -1025,10 +975,6 @@ function update(deltaTime) {
     walkCubes.push(walkCubeTest);
   }
 
-  // Rotate the camera
-  //cameraAngle += CAMERA_ORBIT_SPEED * deltaTime;
-  //cameraAngle %= Math.PI * 2;
-
   if (!noiseSheet) return;
 
   // The offsets are now fractional, but sheets are indexed by whole pixels
@@ -1053,9 +999,6 @@ function update(deltaTime) {
       cube.shock -= deltaTime * 4;
     }
 
-    // Take the cube's color from the same spot in the color map, so the
-    // color and height scroll together. The color map gets its own
-    // wrap-around in case its size differs from the depth map.
     if (colorSheet) {
       const cx = (cube.col + offsetX) % colorSheet.width;
       const cy = (cube.row + offsetY) % colorSheet.height;

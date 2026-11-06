@@ -303,58 +303,6 @@ function lookAt(eye, target, up) {
   ];
 }
 
-// IMAGE READING
-async function loadImageData(src) {
-  return new Promise((resolve, reject) => {
-    const image = new Image();
-    image.crossOrigin = "anonymous";
-
-    image.onload = () => {
-      const canvas = document.createElement("canvas");
-      canvas.width = image.width;
-      canvas.height = image.height;
-
-      const ctx = canvas.getContext("2d");
-      ctx.drawImage(image, 0, 0);
-
-      resolve(ctx.getImageData(
-        0, 0,
-        image.width,
-        image.height
-      ));
-    };
-
-    image.onerror = reject;
-    image.src = src;
-  });
-}
-
-let grassColorData = null;
-let grassDepthData = null;
-
-async function loadGrassMaps() {
-  const [color, depth] = await Promise.all([
-    loadImageData("resources/grassground.png"),
-    loadImageData("resources/grassground_depth.png")
-  ]);
-
-  grassColorData = color;
-  grassDepthData = depth;
-}
-
-loadGrassMaps();
-
-// NOISE STUFF
-let noiseSheet = null;
-
-// Position of our moving sampling window
-let noiseOffsetX = 0;
-let noiseOffsetY = 0;
-
-// How many source pixels to move per update
-const NOISE_SPEED_X = 16;
-const NOISE_SPEED_Y = 16;
-
 // Height range of the cubes
 const MIN_HEIGHT = 0.1;
 const MAX_HEIGHT = 10.0;
@@ -368,55 +316,6 @@ let cameraAngle = Math.PI / 4;
 // If the tab was in the background, the next frame's deltaTime can be huge.
 // Clamp it so nothing jumps.
 const MAX_DELTA_TIME = 0.1;
-
-
-function createImageNoiseSheet(imageData, width, height) {
-  return {
-    width: width,
-    height: height,
-
-    sample: function(x, y) {
-      const index = (y * width + x) * 4;
-
-      const r = imageData[index];
-      const g = imageData[index + 1];
-      const b = imageData[index + 2];
-
-      // Convert RGB to brightness
-      return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
-    }
-  };
-}
-
-function createArrayNoiseSheet(data) {
-  return {
-    width: data[0].length,
-    height: data.length,
-
-    sample: function(x, y) {
-      return data[y][x];
-    }
-  };
-}
-
-function generateTestNoise(width, height) {
-  return {
-    width,
-    height,
-
-    sample: function(x, y) {
-      // A few overlapping waves to simulate terrain
-      return (
-        0.5 +
-        0.2 * Math.sin(x * 0.05) +
-        0.15 * Math.cos(y * 0.08) +
-        0.1 * Math.sin((x + y) * 0.03)
-      );
-    }
-  };
-}
-
-noiseSheet = generateTestNoise(500, 500);
 
 // ---------------------------------------------------------------------
 // 5. DRAW
@@ -472,34 +371,6 @@ function update(deltaTime) {
   // Rotate the camera
   cameraAngle += CAMERA_ORBIT_SPEED * deltaTime;
   cameraAngle %= Math.PI * 2;   // keep the number small
-
-  /* For 1b
- 
-  // Move our sampling window
-  noiseOffsetX += NOISE_SPEED_X * deltaTime;
-  noiseOffsetY += NOISE_SPEED_Y * deltaTime;
- 
-  if (!noiseSheet) return;
- 
-  // The offsets are now fractional, but sheets are indexed by whole pixels
-  // (array / image sheets would return garbage for e.g. x = 3.7).
-  const offsetX = Math.floor(noiseOffsetX);
-  const offsetY = Math.floor(noiseOffsetY);
- 
-  for (const cube of cubes) {
- 
-    // Get the corresponding position in the noise sheet
-    const nx = (cube.col + offsetX) % noiseSheet.width;
-    const ny = (cube.row + offsetY) % noiseSheet.height;
- 
-    // Sample the noise value
-    const value = noiseSheet.sample(nx, ny);
- 
-    // Convert noise value into cube height
-    cube.height = MIN_HEIGHT +
-      value * (MAX_HEIGHT - MIN_HEIGHT);
-  }
-  */
 }
  
 let lastTimestamp = null;

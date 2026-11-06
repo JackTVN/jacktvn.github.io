@@ -334,18 +334,18 @@ async function loadImageData(src) {
 //   color map -> colorSheet  (pixel color becomes cube color)
 // If loading fails (missing file, or opened via file:// which blocks
 // pixel reading), we keep the procedural test noise as a fallback.
-async function loadGrassMaps() {
+async function loadMaps(srcColor, srcDepth) {
   try {
     const [color, depth] = await Promise.all([
-      loadImageData("resources/grassground.png"),
-      loadImageData("resources/grassground_depth.png")
+      loadImageData(srcColor),
+      loadImageData(srcDepth)
     ]);
 
     // ImageData keeps its pixels in .data, so pass that along.
-    noiseSheet = createImageNoiseSheet(depth.data, depth.width, depth.height);
-    colorSheet = createImageColorSheet(color.data, color.width, color.height);
+    noiseSheet = createResizedNoiseSheet(depth.data, depth.width, depth.height);
+    colorSheet = createResizedColorSheet(color.data, color.width, color.height);
   } catch (error) {
-    console.warn("Could not load grass maps, using test noise instead:", error);
+    console.warn("Could not load maps", error);
   }
 }
 
@@ -356,17 +356,8 @@ let noiseSheet = null;
 let noiseOffsetX = 0;
 let noiseOffsetY = 0;
 
-// How many source pixels to move per SECOND (scaled by deltaTime in update)
-// (The old value of 8 per update at 30 FPS was 240 per second.)
-const NOISE_SPEED_X = 20;
-const NOISE_SPEED_Y = 0;
-
-// CAMERA ORBIT
-// The camera circles the origin at a fixed distance and height.
-// The angle is in radians; the speed is radians PER SECOND.
-const CAMERA_HEIGHT = 104;
-const CAMERA_RADIUS = 64 * Math.SQRT2;   // same start spot as the old [64, 104, 64]
-const CAMERA_ORBIT_SPEED = 0.2;          // ~31 seconds per full lap
+let CAMERA_HEIGHT = 104;
+let CAMERA_RADIUS = 64 * Math.SQRT2;   // same start spot as the old [64, 104, 64]
 let cameraAngle = Math.PI / 4;
 
 // If the tab was in the background, the next frame's deltaTime can be huge.
@@ -375,77 +366,105 @@ const MAX_DELTA_TIME = 0.1;
 
 // Height range of the cubes
 const MIN_HEIGHT = 0.1;
-const MAX_HEIGHT = 10.0;
+const MAX_HEIGHT = 40.0;
 
-function createImageNoiseSheet(imageData, width, height) {
-  return {
-    width: width,
-    height: height,
+function getAveragePixel(imageData, width, height, x0, y0, x1, y1) {
+  let r = 0, g = 0, b = 0;
+  let count = 0;
 
-    sample: function(x, y) {
-      const index = (y * width + x) * 4;
+  for (let y = y0; y < y1; y++) {
+    for (let x = x0; x < x1; x++) {
+      const i = (y * width + x) * 4;
 
-      const r = imageData[index];
-      const g = imageData[index + 1];
-      const b = imageData[index + 2];
-
-      // Convert RGB to brightness
-      return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      r += imageData[i];
+      g += imageData[i + 1];
+      b += imageData[i + 2];
+      count++;
     }
-  };
+  }
+
+  return [
+    r / count / 255,
+    g / count / 255,
+    b / count / 255
+  ];
 }
 
-function createArrayNoiseSheet(data) {
-  return {
-    width: data[0].length,
-    height: data.length,
+function createResizedNoiseSheet(imageData, width, height) {
+  const values = new Float32Array(GRID_SIZE * GRID_SIZE);
 
-    sample: function(x, y) {
-      return data[y][x];
-    }
-  };
-}
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
 
-function generateTestNoise(width, height) {
-  return {
-    width,
-    height,
+      const x0 = Math.floor(x * width / GRID_SIZE);
+      const x1 = Math.floor((x + 1) * width / GRID_SIZE);
+      const y0 = Math.floor(y * height / GRID_SIZE);
+      const y1 = Math.floor((y + 1) * height / GRID_SIZE);
 
-    sample: function(x, y) {
-      // A few overlapping waves to simulate terrain
-      return (
-        0.5 +
-        0.2 * Math.sin(x * 0.05) +
-        0.15 * Math.cos(y * 0.08) +
-        0.1 * Math.sin((x + y) * 0.03)
+      const avg = getAveragePixel(
+        imageData, width, height, x0, y0, x1, y1
       );
+
+      const index = y * GRID_SIZE + x;
+
+      values[index] =
+        0.333 * avg[0] +
+        0.333 * avg[1] +
+        0.333 * avg[2];
+    }
+  }
+
+  return {
+    width: GRID_SIZE,
+    height: GRID_SIZE,
+
+    sample: function(x, y) {
+      return values[y * GRID_SIZE + x];
     }
   };
 }
 
-// Reads the RGB color of one pixel (0..1 per channel) into `out`.
-// Writing into an existing array avoids allocating 10,000 arrays per frame.
-function createImageColorSheet(imageData, width, height) {
+function createResizedColorSheet(imageData, width, height) {
+  const colors = new Float32Array(GRID_SIZE * GRID_SIZE * 3);
+
+  for (let y = 0; y < GRID_SIZE; y++) {
+    for (let x = 0; x < GRID_SIZE; x++) {
+
+      const x0 = Math.floor(x * width / GRID_SIZE);
+      const x1 = Math.floor((x + 1) * width / GRID_SIZE);
+      const y0 = Math.floor(y * height / GRID_SIZE);
+      const y1 = Math.floor((y + 1) * height / GRID_SIZE);
+
+      const avg = getAveragePixel(
+        imageData, width, height, x0, y0, x1, y1
+      );
+
+      const index = (y * GRID_SIZE + x) * 3;
+
+      colors[index] = avg[0];
+      colors[index + 1] = avg[1];
+      colors[index + 2] = avg[2];
+    }
+  }
+
   return {
-    width: width,
-    height: height,
+    width: GRID_SIZE,
+    height: GRID_SIZE,
 
     sampleInto: function(x, y, out) {
-      const index = (y * width + x) * 4;
-      out[0] = imageData[index] / 255;
-      out[1] = imageData[index + 1] / 255;
-      out[2] = imageData[index + 2] / 255;
+      const index = (y * GRID_SIZE + x) * 3;
+
+      out[0] = colors[index];
+      out[1] = colors[index + 1];
+      out[2] = colors[index + 2];
     }
   };
 }
-
-// Start with the procedural noise so something shows while images load.
-noiseSheet = generateTestNoise(500, 500);
 
 // Filled in once the grass color map has loaded (null until then).
 let colorSheet = null;
 
-loadGrassMaps();
+loadMaps("resources/grassground.png", "resources/grassground_depth.png");
 
 // ---------------------------------------------------------------------
 // 5. DRAW
@@ -497,34 +516,19 @@ function draw() {
 }
 
 function update(deltaTime) {
-
-  // Rotate the camera
-  cameraAngle += CAMERA_ORBIT_SPEED * deltaTime;
-  cameraAngle %= Math.PI * 2;   // keep the number small
-
   if (!noiseSheet) return;
 
-  // The offsets are now fractional, but sheets are indexed by whole pixels
-  // (array / image sheets would return garbage for e.g. x = 3.7).
   const offsetX = Math.floor(noiseOffsetX);
   const offsetY = Math.floor(noiseOffsetY);
 
   for (const cube of cubes) {
-
-    // Get the corresponding position in the noise sheet
     const nx = (cube.col + offsetX) % noiseSheet.width;
     const ny = (cube.row + offsetY) % noiseSheet.height;
 
-    // Sample the noise value
     const value = noiseSheet.sample(nx, ny);
 
-    // Convert noise value into cube height
-    cube.height = MIN_HEIGHT +
-      value * (MAX_HEIGHT - MIN_HEIGHT);
+    cube.height = MIN_HEIGHT + value * (MAX_HEIGHT - MIN_HEIGHT);
 
-    // Take the cube's color from the same spot in the color map, so the
-    // color and height scroll together. The color map gets its own
-    // wrap-around in case its size differs from the depth map.
     if (colorSheet) {
       const cx = (cube.col + offsetX) % colorSheet.width;
       const cy = (cube.row + offsetY) % colorSheet.height;
@@ -548,3 +552,68 @@ function frame(timestamp) {
 }
 
 requestAnimationFrame(frame);
+
+// Camera movement with mouse because annoying
+let dragging = false;
+let lastMouseX = 0;
+let lastMouseY = 0;
+
+window.addEventListener("mousedown", (e) => {
+  dragging = true;
+  lastMouseX = e.clientX;
+  lastMouseY = e.clientY;
+});
+
+window.addEventListener("mouseup", () => {
+  dragging = false;
+});
+
+window.addEventListener("mousemove", (e) => {
+  if (!dragging) return;
+
+  const dx = e.clientX - lastMouseX;
+  const dy = e.clientY - lastMouseY;
+
+  cameraAngle -= dx * 0.005;
+  CAMERA_HEIGHT += dy * 0.15;
+
+  CAMERA_HEIGHT = Math.max(2, Math.min(100, CAMERA_HEIGHT));
+
+  lastMouseX = e.clientX;
+  lastMouseY = e.clientY;
+});
+
+window.addEventListener(
+  "wheel",
+  (e) => {
+    e.preventDefault();
+
+    CAMERA_RADIUS += e.deltaY * 0.05;
+    CAMERA_RADIUS = Math.max(5, Math.min(200, CAMERA_RADIUS));
+  },
+  { passive: false },
+);
+
+const radioButtons = document.querySelectorAll('input[name="image"]');
+
+radioButtons.forEach((button) => {
+  button.addEventListener("change", () => {
+    const selectedImage = document.querySelector('input[name="image"]:checked').id;
+
+    loadMaps(
+      `resources/${selectedImage}.png`,
+      `resources/${selectedImage}_depth.png`
+    );
+})})
+
+const fileInput = document.getElementById("file-input");
+
+fileInput.addEventListener("change", (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  loadMaps(
+    URL.createObjectURL(file),
+    URL.createObjectURL(file)
+  );
+})

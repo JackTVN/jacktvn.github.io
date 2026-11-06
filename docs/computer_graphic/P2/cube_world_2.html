@@ -50,6 +50,17 @@
             color: white;
             text-decoration: none;
         }
+
+        #image-selection {
+            margin-top: 20px;
+            text-align: left;
+            display: flex;
+            flex-direction: column;
+        }
+
+        #image-selection div {
+            margin-bottom: 10px;
+        }
     </style>
 </head>
 
@@ -62,6 +73,26 @@
             <div id="button-container" onclick="location.href='cube_world_2.html'">2</div>
             <div id="button-container" onclick="location.href='cube_world_3.html'">3</div>
 
+            <div id="image-selection">
+                <div>
+                    <input type="radio" id="grassground" name="image" checked/>
+                    <label for="grassground">Grass Ground</label>
+                </div>
+
+                <div>
+                    <input type="radio" id="mountain" name="image"/>
+                    <label for="mountain">Mountain</label>
+                </div>
+
+                <div>
+                    <input type="radio" id="lake" name="image"/>
+                    <label for="lake">Lake</label>
+                </div>
+            </div>
+
+            <div id="image-upload">
+                <input type="file" id="file-input" accept="image/*">
+            </div>
         </div>
         <canvas id="c"></canvas>
     </div>
