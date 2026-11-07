@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Documentation</title>
+    
+</head>
+<style>
+    body {
+        font-family: Arial, "Times New Roman", serif;
+        margin: 20px 10%;
+        line-height: 2;
+        letter-spacing: 0.4px;
+    }
+    h1 {
+        text-align: center;
+    }
+    p, li {
+        font-size: 16px;
+    }
+</style>
+<body>
+    <h1>Documentation</h1>
+    <br><h2>Design</h2>
+
+    <br><h2>Detail</h2>
+    <p>The final source code consists of 4 levels: 1A, 1B, 2, and 3:
+        <ul>
+            <li>Level 1A is simply a grid of 50x50 cubes on the ground.</li>
+            <li>Level 1B also has a grid of 50x50 cubes, with varying height overtime. The height of these cube
+                follow a quadratic bezier curve function on the x axis, and a small delay on the y axis, creating a diagonal
+                wave effect.
+            </li>
+            <li>Level 2 is a slightly modified version of 1B, with a grid of 100x100, and extra function that allow it to
+                load an image to be used as a color map, as well as a height map for the cubes.
+                The level has 3 default images with depth map to choose from, but users can also upload their own images, in which
+                case the depth map is the same as the color map uploaded.
+            </li>
+            <li>Level 3 is a separate advanced level in 50x50 grid. The level, unlike other, use instanced rendering, and 
+                consist of a tower defense-like game scene, where a lot of objects and particles are spawned using diverse
+                cube size and bezier curves.
+            </li>
+            <li>The supposed Level 4 was encapsulated in Level 3.</li>
+        </ul>
+    </p>
+    <p>
+        For Level 1B, 2, and 3: 
+        <ul>
+            <li>Hold Mouse and move left/right to rotate the camera around the scene.</li>
+            <li>Hold Mouse and move up/down to move the camera up/down.</li>
+            <li>Use the mouse wheel to zoom in/out.</li>
+            <li>(The camera always points at point 0,0,0.)</li>
+        </ul>
+    </p>
+    <br><h2>Implementation</h2>
+        <b>Shader:</b> Level 1A, 1B, and 2 used the default shaders given by the assignment, however, level 3 used
+        custom shaders to support instanced rendering (through ANGLE_instanced_arrays, a WebGL extension):
+        <ul>
+            <li><b>Vertex Shader:</b> Multiple per-instance data are added to the source, allowing each instance to have its own
+                position, scale, color, and other attributes, while still being rendered all at once.
+                Slight change to worldPosition calculation to account for scaling.
+            </li><br>
+            <li><b>Fragment Shader:</b> Color is changed to 'varying' to support per-instance colors.</li><br>
+            <li><b>Instance:</b> An extra part of the shader include instance setup, majority of which
+                are done to add a uniform buffer of per-instance data to the WebGL object.
+                By doing this, all instances can be rendered in a single draw call, while each instance
+                can still have its own attributes (for this project, these include position, scaling, and color,
+                all in a 3D vector, for a total of 9 floats per instance).
+            </li><br>
+        </ul>
+        <b>Depth, Color, and Design Application:</b> An 'image map' system was used to apply depth, color, and design to the 
+        entire cubes surface grids for all levels (except 1A) for uniformity. This allows all levels to use somewhat the same
+        loading system, making map design and coding easier after the 1st time.
+        More specifically, ImageData was used to read the pixel values from each image, which was extracted by drawing images on a 
+        canvas and using canvas.getImageData().
+        <ul>
+            <li><b>Depth Map:</b> Used to determine the height of each cube in the grid (white is highest). By default,
+                the depth map used the same image as the color map, making the cube heights vary based on the image. This does have a limitation,
+                as it means the depth and color information cannot be controlled independently. Level 2 and 3's base setup do include a height map,
+                which avoids this problem, but the upload functionality of Level 2 does not support uploading a separate height map, making some
+                interesting depth decisions for some images (such as a lake with the water higher than the surrounding land).
+            </li><br>
+            <li><b>Color Map:</b> Applied to the surface of the cubes to provide color information.
+            </li><br>
+            <li><b>Noise Map:</b> A unique function created for Level 1B. Since Level 1B does not work with images, a
+            noise map was generated to 'mimic' the data of a depth map/image. The test noise map in level 1B was generated using simple
+            bezier curve math.
+            </li><br>
+        </ul>
+        <b>Camera:</b> Since camera's position and view are dealt with using shader, the only thing to work with the camera is its control.
+        Simple mouse support was added.<br>
+        <br><b>Bezier Curves:</b> Quadratic Bezier curves were used in Level 1B to generate the noise map, as well as in Level 3 to simulate
+        throwing/dropping objects. A <a href="https://blog.demofox.org/2014/08/28/one-dimensional-bezier-curves/">simplified formula</a> for the curves was used to avoid possible performance issues with
+        more complex calculations.
+    <br><h2>Future Work</h2>
+    <br><h2>Demo Video</h2>
+    <br><h2>Source Code</h2>
+</body>
+</html>
+    
